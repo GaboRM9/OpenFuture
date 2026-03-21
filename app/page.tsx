@@ -4,15 +4,15 @@ import { useState } from 'react'
 import ForecastForm from '@/components/ForecastForm'
 import ForecastStream from '@/components/ForecastStream'
 
-type ForecastState = { topic: string; horizon: string } | null
+type ForecastState = { topic: string; horizon: string; mode: 'light' | 'deep' } | null
 
 export default function Home() {
   const [forecast, setForecast] = useState<ForecastState>(null)
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(topic: string, horizon: string) {
+  function handleSubmit(topic: string, horizon: string, mode: 'light' | 'deep') {
     setLoading(true)
-    setForecast({ topic, horizon })
+    setForecast({ topic, horizon, mode })
   }
 
   function handleReset() {
@@ -38,7 +38,7 @@ export default function Home() {
               FUTURE
             </h1>
             <p className="mt-3 text-sm tracking-wide" style={{ color: 'var(--green-muted)' }}>
-              REAL-TIME WEB INTELLIGENCE → PROBABILISTIC FORECASTING
+              REAL-TIME INTELLIGENCE → PROBABILISTIC FORECASTING
             </p>
             <div
               className="mt-4 border-t pt-4 text-xs tracking-wider"
@@ -57,6 +57,7 @@ export default function Home() {
           <ForecastStream
             topic={forecast.topic}
             horizon={forecast.horizon}
+            mode={forecast.mode}
             onReset={handleReset}
           />
         </div>

@@ -10,6 +10,7 @@ const ForecastChart = dynamic(() => import('./ForecastChart'), { ssr: false })
 type Props = {
   topic: string
   horizon: string
+  mode: 'light' | 'deep'
   onReset: () => void
 }
 
@@ -23,7 +24,7 @@ type ChartData = {
 } | null
 
 const STATUS_LABEL: Record<Status, string> = {
-  loading:   'SCANNING WEB...',
+  loading:   'SCANNING...',
   streaming: 'TRANSMITTING...',
   done:      'ANALYSIS COMPLETE',
   error:     'SIGNAL LOST',
@@ -36,14 +37,22 @@ const STATUS_COLOR: Record<Status, string> = {
   error:     'var(--red)',
 }
 
-function getLoadingMessages(topic: string) {
+function getLoadingMessages(topic: string, mode: 'light' | 'deep') {
+  if (mode === 'light') {
+    return [
+      `SEARCHING: "${topic}" current state`,
+      `SCANNING: recent developments`,
+      `SYNTHESIZING: quick forecast`,
+    ]
+  }
   return [
     `SEARCHING: "${topic}" current state`,
-    `SCANNING: recent news and expert analysis`,
-    `RETRIEVING: historical data and trend lines`,
-    `CROSS-REFERENCING: multiple intelligence sources`,
-    `MODELING: probability distributions`,
-    `SYNTHESIZING: forecast parameters`,
+    `RETRIEVING: historical base rates and reference class`,
+    `SCANNING: expert forecasts and data signals`,
+    `ANALYZING: contrarian and opposing views`,
+    `MAPPING: wild card risks`,
+    `RUNNING: pre-mortem analysis`,
+    `SYNTHESIZING: deep forecast`,
   ]
 }
 
@@ -53,7 +62,7 @@ function extractBottomLine(content: string): string | null {
   return match[1].replace(/[*_#`▌▶█]/g, '').trim()
 }
 
-export default function ForecastStream({ topic, horizon, onReset }: Props) {
+export default function ForecastStream({ topic, horizon, mode, onReset }: Props) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState('')
@@ -65,7 +74,7 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const loadingMessages = getLoadingMessages(topic)
+  const loadingMessages = getLoadingMessages(topic, mode)
 
   // Cycle loading messages
   useEffect(() => {
@@ -80,12 +89,12 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
     const controller = new AbortController()
     abortRef.current = controller
 
-    async function runForecast() {
+    async function runForecast(): Promise<string> {
       try {
         const res = await fetch('/api/forecast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, horizon }),
+          body: JSON.stringify({ topic, horizon, mode }),
           signal: controller.signal,
         })
         if (!res.ok) throw new Error(`API error ${res.status}`)
@@ -115,19 +124,23 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
           .then((r) => r.json())
           .then(({ id }) => { if (id) setForecastId(id) })
           .catch(() => {})
+
+        return full
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return
+        if (err instanceof Error && err.name === 'AbortError') return ''
         setError(err instanceof Error ? err.message : 'Unknown error')
         setStatus('error')
+        return ''
       }
     }
 
-    async function runChart() {
+    async function runChart(forecastContent: string) {
       try {
+        const today = new Date().toISOString().split('T')[0]
         const res = await fetch('/api/chart', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, horizon }),
+          body: JSON.stringify({ topic, horizon, forecastContent, today }),
           signal: controller.signal,
         })
         if (res.ok) {
@@ -141,8 +154,12 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
       }
     }
 
-    runForecast()
-    runChart()
+    async function runAll() {
+      const forecastContent = await runForecast()
+      await runChart(forecastContent)
+    }
+
+    runAll()
 
     return () => controller.abort()
   }, [topic, horizon])
@@ -207,10 +224,20 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
         >
           <div className="flex items-center gap-4 min-w-0">
             <span
-              className="text-xs tracking-widest uppercase glow-sm"
-              style={{ color: 'var(--green-bright)' }}
+              className="text-xs tracking-widest uppercase"
+              style={{ color: 'var(--green-muted)' }}
             >
-              ORACLE
+              MODE
+            </span>
+            <span
+              className="text-xs tracking-widest uppercase px-2 py-0.5 border"
+              style={{
+                borderColor: mode === 'deep' ? 'var(--green)' : 'var(--green-border)',
+                color: mode === 'deep' ? 'var(--green-bright)' : 'var(--green-muted)',
+                background: mode === 'deep' ? 'var(--green-faint)' : 'transparent',
+              }}
+            >
+              {mode === 'deep' ? 'DEEP' : 'LIGHT'}
             </span>
             <span
               className="text-xs hidden sm:block truncate"

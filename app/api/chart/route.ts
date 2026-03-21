@@ -12,35 +12,41 @@ const HORIZON_POINTS: Record<string, { count: number; unit: string }> = {
 }
 
 export async function POST(request: Request) {
-  const { topic, horizon } = await request.json()
+  const { topic, horizon, forecastContent, today } = await request.json()
 
   if (!topic || !horizon) {
     return Response.json({ error: 'Missing params' }, { status: 400 })
   }
 
   const points = HORIZON_POINTS[horizon] ?? { count: 6, unit: 'month' }
+  const currentDate = today ?? new Date().toISOString().split('T')[0]
 
-  const prompt = `Topic: "${topic}"
-Time horizon: ${horizon}
+  const forecastContext = forecastContent
+    ? `\nFORECAST SUMMARY (already generated — your metric must directly reflect the core prediction in this forecast):\n${forecastContent.slice(0, 1500)}\n`
+    : ''
+
+  const prompt = `Today's date: ${currentDate}
+Topic: "${topic}"
+Time horizon: ${horizon} (from ${currentDate})
 Data points needed: ${points.count} (each = 1 ${points.unit})
-
-Task: Identify the single most compelling quantifiable metric that best captures what will change for this topic over the given horizon. Use web search to find the real current value, then project it realistically.
+${forecastContext}
+Task: Identify the single quantifiable metric that MOST DIRECTLY measures the core outcome predicted for this topic. If a forecast is provided, the metric must track the central claim — not a peripheral one. Use web search to find the real current value and recent historical values, then project forward from ${currentDate}.
 
 Return ONLY a JSON object with this exact structure, no markdown, no explanation:
 {
   "metric": "short metric name",
   "unit": "unit label (e.g. %, $B, GW, million users)",
-  "description": "one sentence on why this metric matters",
+  "description": "one sentence on why this metric is the core indicator",
   "data": [
     { "label": "period label", "value": <number>, "projected": <true/false> }
   ]
 }
 
 Rules:
-- First 2 data points: recent historical values (projected: false)
-- Remaining ${points.count - 2} points: forward projections (projected: true)
-- Labels: use short readable strings like "Jan 25", "Q1 25", "Week 1", etc.
-- Values must be realistic numbers — no placeholders
+- First 3 data points: recent historical values anchored to real dates before ${currentDate} (projected: false)
+- Remaining ${points.count - 3} points: forward projections from ${currentDate} (projected: true)
+- Labels: use short readable strings like "Jan 25", "Q1 25", "Week 1" — anchored to actual calendar dates
+- Values must be realistic numbers grounded in your web search — no placeholders
 - Do not include any text outside the JSON object`
 
   try {
