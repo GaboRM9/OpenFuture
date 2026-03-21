@@ -1,111 +1,349 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+const ForecastChart = dynamic(() => import('./ForecastChart'), { ssr: false })
 
 type Props = {
   topic: string
   horizon: string
+  mode: 'light' | 'deep'
   onReset: () => void
 }
 
 type Status = 'loading' | 'streaming' | 'done' | 'error'
 
-export default function ForecastStream({ topic, horizon, onReset }: Props) {
+type ChartData = {
+  metric: string
+  unit: string
+  description: string
+  data: { label: string; value: number; projected: boolean }[]
+} | null
+
+const STATUS_LABEL: Record<Status, string> = {
+  loading:   'SCANNING...',
+  streaming: 'TRANSMITTING...',
+  done:      'ANALYSIS COMPLETE',
+  error:     'SIGNAL LOST',
+}
+
+const STATUS_COLOR: Record<Status, string> = {
+  loading:   'var(--amber)',
+  streaming: 'var(--green-bright)',
+  done:      'var(--green-muted)',
+  error:     'var(--red)',
+}
+
+function getLoadingMessages(topic: string, mode: 'light' | 'deep') {
+  if (mode === 'light') {
+    return [
+      `SEARCHING: "${topic}" current state`,
+      `SCANNING: recent developments`,
+      `SYNTHESIZING: quick forecast`,
+    ]
+  }
+  return [
+    `SEARCHING: "${topic}" current state`,
+    `RETRIEVING: historical base rates and reference class`,
+    `SCANNING: expert forecasts and data signals`,
+    `ANALYZING: contrarian and opposing views`,
+    `MAPPING: wild card risks`,
+    `RUNNING: pre-mortem analysis`,
+    `SYNTHESIZING: deep forecast`,
+  ]
+}
+
+function extractBottomLine(content: string): string | null {
+  const match = content.match(/##\s*Bottom Line\s*\n([\s\S]*?)(?=\n##|$)/)
+  if (!match) return null
+  return match[1].replace(/[*_#`▌▶█]/g, '').trim()
+}
+
+export default function ForecastStream({ topic, horizon, mode, onReset }: Props) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState('')
+  const [chartData, setChartData] = useState<ChartData>(null)
+  const [chartLoading, setChartLoading] = useState(true)
+  const [forecastId, setForecastId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  const loadingMessages = getLoadingMessages(topic, mode)
+
+  // Cycle loading messages
+  useEffect(() => {
+    if (status !== 'loading') return
+    const id = setInterval(() => {
+      setLoadingMsgIdx((i) => (i + 1) % loadingMessages.length)
+    }, 2000)
+    return () => clearInterval(id)
+  }, [status, loadingMessages.length])
 
   useEffect(() => {
     const controller = new AbortController()
     abortRef.current = controller
 
-    async function run() {
+    async function runForecast(): Promise<string> {
       try {
         const res = await fetch('/api/forecast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, horizon }),
+          body: JSON.stringify({ topic, horizon, mode }),
           signal: controller.signal,
         })
-
-        if (!res.ok) {
-          throw new Error(`API error ${res.status}`)
-        }
-
+        if (!res.ok) throw new Error(`API error ${res.status}`)
         setStatus('streaming')
 
         const reader = res.body!.getReader()
         const decoder = new TextDecoder()
+        let full = ''
 
         while (true) {
           const { value, done } = await reader.read()
           if (done) break
-          setContent((prev) => prev + decoder.decode(value, { stream: true }))
+          const chunk = decoder.decode(value, { stream: true })
+          full += chunk
+          setContent(full)
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
         }
 
         setStatus('done')
+
+        // Save and get ID
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, horizon, content: full }),
+        })
+          .then((r) => r.json())
+          .then(({ id }) => { if (id) setForecastId(id) })
+          .catch(() => {})
+
+        return full
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return
+        if (err instanceof Error && err.name === 'AbortError') return ''
         setError(err instanceof Error ? err.message : 'Unknown error')
         setStatus('error')
+        return ''
       }
     }
 
-    run()
-
-    return () => {
-      controller.abort()
+    async function runChart(forecastContent: string) {
+      try {
+        const today = new Date().toISOString().split('T')[0]
+        const res = await fetch('/api/chart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, horizon, forecastContent, today }),
+          signal: controller.signal,
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.metric && data?.data?.length) setChartData(data)
+        }
+      } catch {
+        // non-critical
+      } finally {
+        setChartLoading(false)
+      }
     }
+
+    async function runAll() {
+      const forecastContent = await runForecast()
+      await runChart(forecastContent)
+    }
+
+    runAll()
+
+    return () => controller.abort()
   }, [topic, horizon])
 
+  function handleShare() {
+    if (!forecastId) return
+    const url = `${window.location.origin}/forecast/${forecastId}`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const bottomLine = status === 'done' ? extractBottomLine(content) : null
+
   return (
-    <div className="w-full max-w-4xl">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="w-full space-y-4">
+
+      {/* Chart */}
+      {(chartLoading || chartData) && (
         <div>
-          <span className="text-lg font-semibold text-zinc-100">{topic}</span>
-          <span className="ml-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-            {horizon}
-          </span>
+          {chartLoading ? (
+            <div
+              className="border p-4 text-xs tracking-widest"
+              style={{ borderColor: 'var(--green-border)', color: 'var(--amber)' }}
+            >
+              <span className="cursor-blink">◈</span> IDENTIFYING KEY METRIC...
+            </div>
+          ) : (
+            chartData && <ForecastChart data={chartData} />
+          )}
         </div>
-        <button
-          onClick={onReset}
-          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+      )}
+
+      {/* Bottom Line card — shown when done */}
+      {bottomLine && (
+        <div
+          className="border-l-2 px-5 py-4"
+          style={{ borderColor: 'var(--green-dim)', background: 'var(--bg-panel)' }}
         >
-          New forecast
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
-        {status === 'loading' && (
-          <div className="flex items-center gap-3 text-zinc-400">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-emerald-500" />
-            <span className="text-sm">Researching and analyzing...</span>
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 text-red-400">
-            <p className="font-medium">Error generating forecast</p>
-            <p className="mt-1 text-sm">{error}</p>
-          </div>
-        )}
-
-        {(status === 'streaming' || status === 'done') && (
-          <div className="prose prose-invert prose-emerald max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-300 prose-strong:text-zinc-200 prose-code:text-emerald-400 prose-table:text-zinc-300 prose-th:text-zinc-200 prose-td:text-zinc-400">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-            {status === 'streaming' && (
-              <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-emerald-400" />
-            )}
-          </div>
-        )}
-
-        {status === 'done' && (
-          <p className="mt-4 border-t border-zinc-800 pt-4 text-xs text-zinc-500">
-            Forecast saved to history
+          <p
+            className="text-xs tracking-widest uppercase mb-2"
+            style={{ color: 'var(--green-muted)' }}
+          >
+            ▶ BOTTOM LINE
           </p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--green)' }}>
+            {bottomLine}
+          </p>
+        </div>
+      )}
+
+      {/* Forecast terminal window */}
+      <div
+        className="border"
+        style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
+      >
+        {/* Title bar */}
+        <div
+          className="flex items-center justify-between px-4 py-2 border-b"
+          style={{ borderColor: 'var(--green-border)', background: 'var(--bg)' }}
+        >
+          <div className="flex items-center gap-4 min-w-0">
+            <span
+              className="text-xs tracking-widest uppercase"
+              style={{ color: 'var(--green-muted)' }}
+            >
+              MODE
+            </span>
+            <span
+              className="text-xs tracking-widest uppercase px-2 py-0.5 border"
+              style={{
+                borderColor: mode === 'deep' ? 'var(--green)' : 'var(--green-border)',
+                color: mode === 'deep' ? 'var(--green-bright)' : 'var(--green-muted)',
+                background: mode === 'deep' ? 'var(--green-faint)' : 'transparent',
+              }}
+            >
+              {mode === 'deep' ? 'DEEP' : 'LIGHT'}
+            </span>
+            <span
+              className="text-xs hidden sm:block truncate"
+              style={{ color: 'var(--green-muted)' }}
+            >
+              QUERY: <span style={{ color: 'var(--green)' }}>{topic.toUpperCase()}</span>
+              {' '}// HORIZON: <span style={{ color: 'var(--green)' }}>{horizon.toUpperCase()}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className="text-xs tracking-widest uppercase"
+              style={{ color: STATUS_COLOR[status] }}
+            >
+              {status === 'loading' || status === 'streaming' ? (
+                <span className="flex items-center gap-1">
+                  <span className="cursor-blink">◈</span>
+                  {STATUS_LABEL[status]}
+                </span>
+              ) : STATUS_LABEL[status]}
+            </span>
+            <button
+              onClick={onReset}
+              className="text-xs tracking-widest uppercase px-2 py-0.5 border transition-all hover:bg-[var(--green-faint)]"
+              style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+            >
+              [NEW]
+            </button>
+          </div>
+        </div>
+
+        {/* Output */}
+        <div className="p-6 min-h-64 max-h-[75vh] overflow-y-auto">
+
+          {status === 'loading' && (
+            <div className="space-y-3">
+              <p
+                className="text-xs tracking-widest transition-all"
+                style={{ color: 'var(--amber)' }}
+              >
+                <span className="cursor-blink">◈</span>{' '}
+                {loadingMessages[loadingMsgIdx]}
+              </p>
+              <div
+                className="h-px w-full overflow-hidden"
+                style={{ background: 'var(--green-border)' }}
+              >
+                <div className="scan-line h-px" style={{ background: 'var(--green-dim)' }} />
+              </div>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div
+              className="border p-4"
+              style={{ borderColor: 'var(--red)', color: 'var(--red)' }}
+            >
+              <p className="text-xs tracking-widest uppercase mb-1">✕ TRANSMISSION FAILED</p>
+              <p className="text-xs">{error}</p>
+            </div>
+          )}
+
+          {(status === 'streaming' || status === 'done') && (
+            <div className="terminal-md text-sm leading-relaxed">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              {status === 'streaming' && (
+                <span
+                  className="cursor-blink ml-0.5 inline-block"
+                  style={{ color: 'var(--green-bright)' }}
+                >
+                  ▋
+                </span>
+              )}
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Footer */}
+        {status === 'done' && (
+          <div
+            className="flex items-center justify-between px-4 py-2 border-t text-xs tracking-widest"
+            style={{ borderColor: 'var(--green-border)' }}
+          >
+            <span style={{ color: 'var(--green-faint)' }}>
+              ◈ LOGGED TO HISTORY
+            </span>
+            <div className="flex items-center gap-2">
+              {forecastId && (
+                <button
+                  onClick={handleShare}
+                  className="px-3 py-1 border text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                  style={{
+                    borderColor: copied ? 'var(--green-dim)' : 'var(--green-border)',
+                    color: copied ? 'var(--green-bright)' : 'var(--green-muted)',
+                  }}
+                >
+                  {copied ? '✓ COPIED' : '[SHARE]'}
+                </button>
+              )}
+              <span style={{ color: 'var(--green-muted)' }}>
+                {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
+              </span>
+            </div>
+          </div>
         )}
       </div>
     </div>
