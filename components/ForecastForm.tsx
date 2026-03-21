@@ -1,6 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+const PLACEHOLDERS = [
+  'will remote work survive the next 2 years?',
+  'housing prices in major cities',
+  'AGI — when does it arrive?',
+  'will cash disappear in the next decade?',
+  'humanoid robots in the workforce',
+  'the future of college degrees',
+  'electric vehicles replacing gas cars',
+  'lab-grown meat going mainstream',
+  'AI replacing white-collar jobs',
+  'the 4-day work week becoming standard',
+  'streaming services and the death of cable',
+  'SpaceX and commercial space travel',
+  'longevity drugs and living to 150',
+  'social media and Gen Z mental health',
+  'nuclear fusion going commercial',
+  'the gig economy in 5 years',
+]
 
 const HORIZONS = [
   { label: '1W',  value: '1 week' },
@@ -19,6 +38,14 @@ type Props = {
 export default function ForecastForm({ onSubmit, loading }: Props) {
   const [topic, setTopic] = useState('')
   const [horizon, setHorizon] = useState('3 months')
+  const [placeholderIdx, setPlaceholderIdx] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPlaceholderIdx((i) => (i + 1) % PLACEHOLDERS.length)
+    }, 3000)
+    return () => clearInterval(id)
+  }, [])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -53,7 +80,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. AI regulation, quantum computing, nuclear fusion..."
+            placeholder={PLACEHOLDERS[placeholderIdx]}
             className="flex-1 bg-transparent py-3 pr-4 text-sm outline-none placeholder:opacity-30"
             style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
             disabled={loading}
