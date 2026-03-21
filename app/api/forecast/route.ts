@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { supabase } from '@/lib/supabase'
 import { ORACLE_SYSTEM_PROMPT, buildForecastPrompt } from '@/lib/oracle-prompt'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -39,13 +38,6 @@ export async function POST(request: Request) {
         }
 
         controller.close()
-
-        supabase
-          .from('forecasts')
-          .insert({ topic, horizon, content: fullContent })
-          .then(({ error }) => {
-            if (error) console.error('Supabase save error:', error.message)
-          })
       } catch (err) {
         controller.error(err)
       }
