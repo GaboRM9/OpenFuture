@@ -38,7 +38,11 @@ type Props = {
 export default function ForecastForm({ onSubmit, loading }: Props) {
   const [topic, setTopic] = useState('')
   const [horizon, setHorizon] = useState('3 months')
+  const [custom, setCustom] = useState('')
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
+
+  const isCustom = horizon === '__custom__'
+  const activeHorizon = isCustom ? custom.trim() : horizon
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -49,8 +53,8 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!topic.trim()) return
-    onSubmit(topic.trim(), horizon)
+    if (!topic.trim() || !activeHorizon) return
+    onSubmit(topic.trim(), activeHorizon)
   }
 
   return (
@@ -113,7 +117,6 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
                       background: 'var(--green-faint)',
                       borderColor: 'var(--green)',
                       color: 'var(--green-bright)',
-                      textShadow: '0 0 6px var(--green-bright)',
                     }
                   : {
                       background: 'transparent',
@@ -125,16 +128,61 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
               {label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setHorizon('__custom__')}
+            disabled={loading}
+            className="px-4 py-1.5 text-xs tracking-widest uppercase border transition-all"
+            style={
+              isCustom
+                ? {
+                    background: 'var(--green-faint)',
+                    borderColor: 'var(--green)',
+                    color: 'var(--green-bright)',
+                  }
+                : {
+                    background: 'transparent',
+                    borderColor: 'var(--green-border)',
+                    color: 'var(--green-muted)',
+                  }
+            }
+          >
+            CUSTOM
+          </button>
         </div>
+
+        {isCustom && (
+          <div
+            className="flex items-center border mt-2"
+            style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
+          >
+            <span className="px-3 text-sm select-none" style={{ color: 'var(--green-muted)' }}>
+              &gt;_
+            </span>
+            <input
+              type="text"
+              value={custom}
+              onChange={(e) => setCustom(e.target.value)}
+              placeholder="e.g. 5 years, 10 years, 18 months..."
+              className="flex-1 bg-transparent py-2 pr-4 text-sm outline-none placeholder:opacity-30"
+              style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
+              disabled={loading}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+        )}
+
         <p className="mt-2 text-xs" style={{ color: 'var(--green-faint)' }}>
-          SELECTED: {horizon.toUpperCase()}
+          SELECTED: {activeHorizon ? activeHorizon.toUpperCase() : '—'}
         </p>
       </div>
 
       {/* Submit */}
       <button
         type="submit"
-        disabled={loading || !topic.trim()}
+        disabled={loading || !topic.trim() || !activeHorizon}
         className="w-full py-3 text-sm tracking-widest uppercase font-bold border transition-all disabled:cursor-not-allowed disabled:opacity-30"
         style={{
           background: topic.trim() && !loading ? 'var(--green-faint)' : 'transparent',
