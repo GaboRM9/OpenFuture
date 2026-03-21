@@ -12,11 +12,26 @@ type Props = {
 
 type Status = 'loading' | 'streaming' | 'done' | 'error'
 
+const STATUS_LABEL: Record<Status, string> = {
+  loading:   'SCANNING WEB...',
+  streaming: 'TRANSMITTING...',
+  done:      'ANALYSIS COMPLETE',
+  error:     'SIGNAL LOST',
+}
+
+const STATUS_COLOR: Record<Status, string> = {
+  loading:   'var(--amber)',
+  streaming: 'var(--green-bright)',
+  done:      'var(--green-muted)',
+  error:     'var(--red)',
+}
+
 export default function ForecastStream({ topic, horizon, onReset }: Props) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState('')
   const abortRef = useRef<AbortController | null>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -31,9 +46,7 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
           signal: controller.signal,
         })
 
-        if (!res.ok) {
-          throw new Error(`API error ${res.status}`)
-        }
+        if (!res.ok) throw new Error(`API error ${res.status}`)
 
         setStatus('streaming')
 
@@ -44,6 +57,7 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
           const { value, done } = await reader.read()
           if (done) break
           setContent((prev) => prev + decoder.decode(value, { stream: true }))
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
         }
 
         setStatus('done')
@@ -55,57 +69,116 @@ export default function ForecastStream({ topic, horizon, onReset }: Props) {
     }
 
     run()
-
-    return () => {
-      controller.abort()
-    }
+    return () => controller.abort()
   }, [topic, horizon])
 
   return (
-    <div className="w-full max-w-4xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <span className="text-lg font-semibold text-zinc-100">{topic}</span>
-          <span className="ml-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-            {horizon}
-          </span>
-        </div>
-        <button
-          onClick={onReset}
-          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+    <div className="w-full">
+      {/* Terminal window chrome */}
+      <div
+        className="border"
+        style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
+      >
+        {/* Title bar */}
+        <div
+          className="flex items-center justify-between px-4 py-2 border-b"
+          style={{ borderColor: 'var(--green-border)', background: 'var(--bg)' }}
         >
-          New forecast
-        </button>
-      </div>
-
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 shadow-xl">
-        {status === 'loading' && (
-          <div className="flex items-center gap-3 text-zinc-400">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-emerald-500" />
-            <span className="text-sm">Researching and analyzing...</span>
+          <div className="flex items-center gap-4 min-w-0">
+            <span className="text-xs tracking-widest uppercase glow-sm" style={{ color: 'var(--green-bright)' }}>
+              ORACLE
+            </span>
+            <span className="text-xs hidden sm:block truncate" style={{ color: 'var(--green-muted)' }}>
+              QUERY:{' '}
+              <span style={{ color: 'var(--green)' }}>{topic.toUpperCase()}</span>
+              {' '}// HORIZON:{' '}
+              <span style={{ color: 'var(--green)' }}>{horizon.toUpperCase()}</span>
+            </span>
           </div>
-        )}
-
-        {status === 'error' && (
-          <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 text-red-400">
-            <p className="font-medium">Error generating forecast</p>
-            <p className="mt-1 text-sm">{error}</p>
+          <div className="flex items-center gap-4 shrink-0">
+            <span
+              className="text-xs tracking-widest uppercase"
+              style={{ color: STATUS_COLOR[status] }}
+            >
+              {status === 'loading' || status === 'streaming' ? (
+                <span className="flex items-center gap-1">
+                  <span className="cursor-blink">◈</span>
+                  {STATUS_LABEL[status]}
+                </span>
+              ) : (
+                STATUS_LABEL[status]
+              )}
+            </span>
+            <button
+              onClick={onReset}
+              className="text-xs tracking-widest uppercase px-2 py-0.5 border transition-all hover:bg-[var(--green-faint)]"
+              style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+            >
+              [NEW]
+            </button>
           </div>
-        )}
+        </div>
 
-        {(status === 'streaming' || status === 'done') && (
-          <div className="prose prose-invert prose-emerald max-w-none prose-headings:text-zinc-100 prose-p:text-zinc-300 prose-strong:text-zinc-200 prose-code:text-emerald-400 prose-table:text-zinc-300 prose-th:text-zinc-200 prose-td:text-zinc-400">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-            {status === 'streaming' && (
-              <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-emerald-400" />
-            )}
-          </div>
-        )}
+        {/* Output area */}
+        <div className="p-6 min-h-64 max-h-[75vh] overflow-y-auto">
 
+          {status === 'loading' && (
+            <div className="space-y-2">
+              <p className="text-xs tracking-widest" style={{ color: 'var(--amber)' }}>
+                ◈ INITIALIZING ORACLE ENGINE...
+              </p>
+              <p className="text-xs tracking-widest" style={{ color: 'var(--green-muted)' }}>
+                ◈ DISPATCHING WEB SCOUTS...
+              </p>
+              <div
+                className="mt-4 h-px w-full overflow-hidden"
+                style={{ background: 'var(--green-border)' }}
+              >
+                <div
+                  className="scan-line h-px"
+                  style={{ background: 'var(--green-dim)' }}
+                />
+              </div>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div
+              className="border p-4"
+              style={{ borderColor: 'var(--red)', color: 'var(--red)' }}
+            >
+              <p className="text-xs tracking-widest uppercase mb-1">
+                ✕ TRANSMISSION FAILED
+              </p>
+              <p className="text-xs">{error}</p>
+            </div>
+          )}
+
+          {(status === 'streaming' || status === 'done') && (
+            <div className="terminal-md text-sm leading-relaxed">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              {status === 'streaming' && (
+                <span className="cursor-blink ml-0.5 inline-block" style={{ color: 'var(--green-bright)' }}>
+                  ▋
+                </span>
+              )}
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Footer bar */}
         {status === 'done' && (
-          <p className="mt-4 border-t border-zinc-800 pt-4 text-xs text-zinc-500">
-            Forecast saved to history
-          </p>
+          <div
+            className="flex items-center justify-between px-4 py-2 border-t text-xs tracking-widest"
+            style={{ borderColor: 'var(--green-border)', color: 'var(--green-faint)' }}
+          >
+            <span>◈ LOGGED TO HISTORY</span>
+            <span style={{ color: 'var(--green-muted)' }}>
+              {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
+            </span>
+          </div>
         )}
       </div>
     </div>

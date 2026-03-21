@@ -3,12 +3,12 @@
 import { useState } from 'react'
 
 const HORIZONS = [
-  '1 week',
-  '1 month',
-  '3 months',
-  '6 months',
-  '1 year',
-  '2 years',
+  { label: '1W',  value: '1 week' },
+  { label: '1M',  value: '1 month' },
+  { label: '3M',  value: '3 months' },
+  { label: '6M',  value: '6 months' },
+  { label: '1Y',  value: '1 year' },
+  { label: '2Y',  value: '2 years' },
 ]
 
 type Props = {
@@ -27,56 +27,104 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-4">
+    <form onSubmit={handleSubmit} className="w-full space-y-6">
+
+      {/* Topic input */}
       <div>
         <label
           htmlFor="topic"
-          className="block text-sm font-medium text-zinc-400 mb-1"
+          className="block text-xs tracking-widest uppercase mb-2"
+          style={{ color: 'var(--green-muted)' }}
         >
-          Topic
+          ── QUERY SUBJECT
         </label>
-        <input
-          id="topic"
-          type="text"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g. artificial intelligence regulation, climate change, SpaceX..."
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          disabled={loading}
-          autoFocus
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-zinc-400 mb-2">
-          Time Horizon
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {HORIZONS.map((h) => (
-            <button
-              key={h}
-              type="button"
-              onClick={() => setHorizon(h)}
-              disabled={loading}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                horizon === h
-                  ? 'bg-emerald-500 text-black'
-                  : 'border border-zinc-600 text-zinc-400 hover:border-emerald-500 hover:text-emerald-400'
-              }`}
-            >
-              {h}
-            </button>
-          ))}
+        <div
+          className="flex items-center border"
+          style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
+        >
+          <span
+            className="px-3 text-sm select-none glow-sm"
+            style={{ color: 'var(--green-muted)' }}
+          >
+            &gt;_
+          </span>
+          <input
+            id="topic"
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g. AI regulation, quantum computing, nuclear fusion..."
+            className="flex-1 bg-transparent py-3 pr-4 text-sm outline-none placeholder:opacity-30"
+            style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
+            disabled={loading}
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+          />
         </div>
       </div>
 
+      {/* Horizon */}
+      <div>
+        <label
+          className="block text-xs tracking-widest uppercase mb-2"
+          style={{ color: 'var(--green-muted)' }}
+        >
+          ── TIME HORIZON
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {HORIZONS.map(({ label, value }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setHorizon(value)}
+              disabled={loading}
+              className="px-4 py-1.5 text-xs tracking-widest uppercase border transition-all"
+              style={
+                horizon === value
+                  ? {
+                      background: 'var(--green-faint)',
+                      borderColor: 'var(--green)',
+                      color: 'var(--green-bright)',
+                      textShadow: '0 0 6px var(--green-bright)',
+                    }
+                  : {
+                      background: 'transparent',
+                      borderColor: 'var(--green-border)',
+                      color: 'var(--green-muted)',
+                    }
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs" style={{ color: 'var(--green-faint)' }}>
+          SELECTED: {horizon.toUpperCase()}
+        </p>
+      </div>
+
+      {/* Submit */}
       <button
         type="submit"
         disabled={loading || !topic.trim()}
-        className="w-full rounded-lg bg-emerald-500 py-3 font-semibold text-black transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full py-3 text-sm tracking-widest uppercase font-bold border transition-all disabled:cursor-not-allowed disabled:opacity-30"
+        style={{
+          background: topic.trim() && !loading ? 'var(--green-faint)' : 'transparent',
+          borderColor: 'var(--green-muted)',
+          color: 'var(--green-bright)',
+        }}
       >
-        {loading ? 'Generating forecast...' : 'Generate Forecast'}
+        {loading ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="cursor-blink">▋</span>
+            INITIALIZING...
+          </span>
+        ) : (
+          '▶ EXECUTE ANALYSIS'
+        )}
       </button>
+
     </form>
   )
 }

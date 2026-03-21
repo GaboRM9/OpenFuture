@@ -12,67 +12,122 @@ export default async function HistoryPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-12">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-100">Forecast History</h1>
-        <Link
-          href="/"
-          className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors"
-        >
-          New Forecast
-        </Link>
+
+      {/* Header */}
+      <div className="mb-8">
+        <p className="text-xs tracking-widest mb-3" style={{ color: 'var(--green-muted)' }}>
+          ── ORACLE ENGINE // QUERY LOG ──
+        </p>
+        <div className="flex items-end justify-between">
+          <div>
+            <h1
+              className="text-xl font-bold tracking-widest uppercase glow"
+              style={{ color: 'var(--green-bright)' }}
+            >
+              FORECAST HISTORY
+            </h1>
+            {forecasts && (
+              <p className="mt-1 text-xs tracking-widest" style={{ color: 'var(--green-faint)' }}>
+                {forecasts.length} ENTRIES FOUND
+              </p>
+            )}
+          </div>
+          <Link
+            href="/"
+            className="px-4 py-2 text-xs tracking-widest uppercase border transition-all hover:bg-[var(--green-faint)]"
+            style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+          >
+            [NEW QUERY]
+          </Link>
+        </div>
+        <div
+          className="mt-4 border-t"
+          style={{ borderColor: 'var(--green-border)' }}
+        />
       </div>
 
+      {/* Error state */}
       {error && (
-        <div className="rounded-lg border border-red-800 bg-red-900/20 p-4 text-red-400">
-          Failed to load history: {error.message}
+        <div
+          className="border p-4 text-xs tracking-widest"
+          style={{ borderColor: 'var(--red)', color: 'var(--red)' }}
+        >
+          ✕ DATABASE ERROR: {error.message.toUpperCase()}
         </div>
       )}
 
+      {/* Empty state */}
       {!error && (!forecasts || forecasts.length === 0) && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-12 text-center">
-          <p className="text-zinc-400">No forecasts yet.</p>
+        <div
+          className="border p-12 text-center"
+          style={{ borderColor: 'var(--green-border)' }}
+        >
+          <p className="text-xs tracking-widest uppercase mb-4" style={{ color: 'var(--green-muted)' }}>
+            NO RECORDS IN SYSTEM
+          </p>
           <Link
             href="/"
-            className="mt-4 inline-block text-sm text-emerald-400 hover:underline"
+            className="text-xs tracking-widest uppercase border px-4 py-2 transition-all hover:bg-[var(--green-faint)]"
+            style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
           >
-            Generate your first forecast
+            [INITIALIZE FIRST QUERY]
           </Link>
         </div>
       )}
 
+      {/* Log entries */}
       {forecasts && forecasts.length > 0 && (
-        <div className="space-y-4">
-          {forecasts.map((forecast: Forecast) => {
+        <div className="space-y-px">
+          {forecasts.map((forecast: Forecast, i: number) => {
             const preview = forecast.content
               .split('\n')
               .find((l) => l.trim() && !l.startsWith('#'))
-            const date = new Date(forecast.created_at).toLocaleDateString(
-              undefined,
-              { year: 'numeric', month: 'short', day: 'numeric' },
-            )
+            const date = new Date(forecast.created_at)
+            const dateStr = date.toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+            const index = String(i + 1).padStart(3, '0')
 
             return (
               <div
                 key={forecast.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-colors hover:border-zinc-700"
+                className="log-entry p-4"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="truncate font-semibold text-zinc-100">
+                <div className="flex items-start gap-4">
+                  <span
+                    className="text-xs font-bold shrink-0 mt-0.5"
+                    style={{ color: 'var(--green-faint)' }}
+                  >
+                    [{index}]
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span
+                        className="text-sm font-bold uppercase tracking-wide truncate"
+                        style={{ color: 'var(--green)' }}
+                      >
                         {forecast.topic}
-                      </h2>
-                      <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-                        {forecast.horizon}
+                      </span>
+                      <span
+                        className="text-xs tracking-widest uppercase border px-2 py-0.5 shrink-0"
+                        style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+                      >
+                        {forecast.horizon.toUpperCase()}
                       </span>
                     </div>
                     {preview && (
-                      <p className="mt-1.5 line-clamp-2 text-sm text-zinc-400">
-                        {preview.replace(/[*_#`]/g, '')}
+                      <p
+                        className="mt-1 text-xs line-clamp-2 leading-relaxed"
+                        style={{ color: 'var(--green-muted)' }}
+                      >
+                        {preview.replace(/[*_#`▌▶█]/g, '').trim()}
                       </p>
                     )}
                   </div>
-                  <span className="shrink-0 text-xs text-zinc-500">{date}</span>
+                  <span
+                    className="text-xs shrink-0 hidden sm:block"
+                    style={{ color: 'var(--green-faint)' }}
+                  >
+                    {dateStr}
+                  </span>
                 </div>
               </div>
             )

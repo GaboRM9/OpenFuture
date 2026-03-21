@@ -1,26 +1,217 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:           #080808;
+  --bg-panel:     #0e0e0e;
+  --bg-hover:     #161616;
+  --green:        #f0f0f0;
+  --green-bright: #ffffff;
+  --green-dim:    #b8b8b8;
+  --green-muted:  #737373;
+  --green-faint:  #222222;
+  --green-border: #272727;
+  --amber:        #ffb700;
+  --red:          #ff4444;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg:           #f5f5f5;
+    --bg-panel:     #ebebeb;
+    --bg-hover:     #e0e0e0;
+    --green:        #141414;
+    --green-bright: #000000;
+    --green-dim:    #3a3a3a;
+    --green-muted:  #888888;
+    --green-faint:  #d4d4d4;
+    --green-border: #cccccc;
+    --amber:        #b87800;
+    --red:          #cc2222;
   }
 }
 
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--green);
+  --font-sans: var(--font-geist-mono);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--font-geist-mono), "Courier New", monospace;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* CRT scanlines overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@media (prefers-color-scheme: light) {
+  body::after {
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.025) 2px,
+      rgba(0, 0, 0, 0.025) 4px
+    );
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--green-faint); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--green-muted); }
+
+/* Text glow */
+.glow {
+  text-shadow: 0 0 8px currentColor;
+}
+.glow-sm {
+  text-shadow: 0 0 4px currentColor;
+}
+
+/* Blinking cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Scan animation for loading */
+@keyframes scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+.scan-line {
+  animation: scan 1.5s linear infinite;
+}
+
+/* Terminal markdown output */
+.terminal-md h1,
+.terminal-md h2,
+.terminal-md h3 {
+  color: var(--green-bright);
+  text-shadow: none;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.terminal-md h1::before { content: '█ '; }
+.terminal-md h2::before { content: '▌ '; }
+.terminal-md h3::before { content: '▶ '; }
+
+.terminal-md p {
+  color: var(--green-dim);
+  line-height: 1.7;
+  margin-bottom: 0.75em;
+}
+
+.terminal-md strong {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.terminal-md ul,
+.terminal-md ol {
+  color: var(--green-dim);
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.terminal-md li {
+  margin-bottom: 0.25em;
+  line-height: 1.6;
+}
+
+.terminal-md li::marker {
+  color: var(--green-muted);
+}
+
+.terminal-md code {
+  color: var(--amber);
+  background: rgba(255, 183, 0, 0.08);
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+}
+
+.terminal-md blockquote {
+  border-left: 2px solid var(--green-faint);
+  padding-left: 1em;
+  color: var(--green-muted);
+  margin: 0.75em 0;
+}
+
+/* Table */
+.terminal-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.85em;
+}
+
+.terminal-md th {
+  color: var(--green-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--green-faint);
+  padding: 0.4em 0.75em;
+  text-align: left;
+  font-weight: 700;
+}
+
+.terminal-md td {
+  color: var(--green-dim);
+  border-bottom: 1px solid var(--green-border);
+  padding: 0.4em 0.75em;
+  vertical-align: top;
+}
+
+.terminal-md tr:hover td {
+  background: var(--bg-hover);
+  color: var(--green);
+}
+
+/* hr */
+.terminal-md hr {
+  border: none;
+  border-top: 1px solid var(--green-faint);
+  margin: 1.5em 0;
+}
+
+/* History card hover */
+.log-entry {
+  border: 1px solid var(--green-border);
+  background: var(--bg-panel);
+  transition: border-color 0.15s, background 0.15s;
+}
+.log-entry:hover {
+  border-color: var(--green-muted);
+  background: var(--bg-hover);
 }

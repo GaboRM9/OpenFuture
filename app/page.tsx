@@ -21,28 +21,45 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-zinc-950 px-4 py-16">
+    <main className="flex min-h-[calc(100vh-49px)] flex-col items-center px-4 py-12">
       {!forecast && (
-        <div className="flex w-full max-w-2xl flex-col items-center gap-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-zinc-100">
-              Open<span className="text-emerald-400">Future</span>
-            </h1>
-            <p className="mt-3 text-zinc-400">
-              AI-powered forecast analysis — enter a topic and see what&apos;s
-              ahead
+        <div className="flex w-full max-w-2xl flex-col gap-10">
+          {/* Header */}
+          <div>
+            <p className="text-xs tracking-widest mb-3" style={{ color: 'var(--green-muted)' }}>
+              ── ORACLE ENGINE // PREDICTIVE ANALYSIS SYSTEM ──
             </p>
+            <h1
+              className="text-3xl sm:text-4xl font-bold tracking-widest uppercase glow leading-tight"
+              style={{ color: 'var(--green-bright)' }}
+            >
+              OPEN
+              <span className="cursor-blink" style={{ color: 'var(--green-muted)' }}>_</span>
+              FUTURE
+            </h1>
+            <p className="mt-3 text-sm tracking-wide" style={{ color: 'var(--green-muted)' }}>
+              REAL-TIME WEB INTELLIGENCE → PROBABILISTIC FORECASTING
+            </p>
+            <div
+              className="mt-4 border-t pt-4 text-xs tracking-wider"
+              style={{ borderColor: 'var(--green-border)', color: 'var(--green-faint)' }}
+            >
+              INPUT QUERY · SELECT HORIZON · RECEIVE ANALYSIS
+            </div>
           </div>
+
           <ForecastForm onSubmit={handleSubmit} loading={loading} />
         </div>
       )}
 
       {forecast && (
-        <ForecastStream
-          topic={forecast.topic}
-          horizon={forecast.horizon}
-          onReset={handleReset}
-        />
+        <div className="w-full max-w-4xl">
+          <ForecastStream
+            topic={forecast.topic}
+            horizon={forecast.horizon}
+            onReset={handleReset}
+          />
+        </div>
       )}
     </main>
   )
