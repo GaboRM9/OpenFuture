@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import {
   LIGHT_SYSTEM_PROMPT,
   DEEP_RESEARCH_PROMPT,
+  COMPRESS_RESEARCH_PROMPT,
   DEEP_SYNTHESIS_PROMPT,
   buildForecastPrompt,
   buildResearchPrompt,
@@ -109,14 +110,25 @@ export async function POST(request: Request) {
         if (isDeep) {
           // Pass 1: research agent gathers evidence into structured JSON
           const researchMessage = await anthropic.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 4000,
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 3000,
             system: DEEP_RESEARCH_PROMPT,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            tools: [{ type: 'web_search_20260209', name: 'web_search' }] as any,
+            tools: [{ type: 'web_search_20260209', name: 'web_search', allowed_callers: ['direct'] }] as any,
             messages: [{ role: 'user', content: buildResearchPrompt(topic, horizon, today) }],
           })
-          const researchData = extractResearchText(researchMessage)
+          const rawResearch = extractResearchText(researchMessage)
+
+          // Pass 1.5: compress research JSON before passing to Opus
+          const compressionMessage = await anthropic.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1500,
+            messages: [{
+              role: 'user',
+              content: `${COMPRESS_RESEARCH_PROMPT}\n\n${rawResearch}`,
+            }],
+          })
+          const researchData = extractResearchText(compressionMessage)
 
           // Pass 2: Opus synthesizes from the structured evidence
           messageStream = anthropic.messages.stream({

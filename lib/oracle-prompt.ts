@@ -80,7 +80,7 @@ ${getHorizonFraming(horizon)}
 Search the web first using ${today} as your reference point for what is current. All predictions should be dated relative to ${today}.`
 }
 
-export const DEEP_RESEARCH_PROMPT = `You are a research agent. Your only job is to gather evidence — do NOT write a forecast or analysis. Run 8-10 web searches covering: current state, recent data signals (multiple), expert opinions and institutional forecasts, historical base rates for similar situations, reference class data, contrarian views, macro/geopolitical factors, sector trends, and wild card risks.
+export const DEEP_RESEARCH_PROMPT = `You are a research agent. Your only job is to gather evidence — do NOT write a forecast or analysis. Run 8-10 web searches covering: current state, recent data signals (multiple), expert opinions and institutional forecasts, historical base rates for similar situations, reference class data, contrarian views, macro/geopolitical factors, sector trends, and wild card risks. Search Metaculus and Polymarket specifically for any crowd forecast probabilities on this topic.
 
 After completing all searches, output ONLY a raw JSON object — no markdown, no commentary, no code blocks. Use this exact structure:
 {
@@ -92,8 +92,16 @@ After completing all searches, output ONLY a raw JSON object — no markdown, no
   "contrarian_views": ["view 1", "..."],
   "macro_factors": ["factor 1", "..."],
   "wild_card_risks": ["risk 1", "..."],
-  "key_uncertainties": ["uncertainty 1", "..."]
+  "key_uncertainties": ["uncertainty 1", "..."],
+  "prediction_market_probability": "current crowd probability from Metaculus/Polymarket if found, e.g. '41% (Metaculus, n=320)' or 'not found'"
 }`
+
+export const COMPRESS_RESEARCH_PROMPT = `Compress the following research JSON to be maximally concise. Rules:
+- Preserve every unique fact, data point, and source
+- Max 20 words per string value
+- Max 5 items per array (keep the most important)
+- Output ONLY valid JSON — no markdown, no commentary, no code blocks
+- Keep the exact same keys`
 
 export const DEEP_SYNTHESIS_PROMPT = `You are The Oracle — a rigorous analytical forecasting engine. You will receive structured research data already gathered from web searches and prediction markets. Your job is pure synthesis — do NOT search the web. All evidence is provided.
 
@@ -103,7 +111,14 @@ Your forecast follows this structure:
 Summarize the current state from the research data, citing specific data points.
 
 ## Base Rate Analysis
-State the reference class base rate FIRST as a number, then adjust for current conditions. If prediction market probabilities are provided, cite and reconcile against them explicitly.
+Show your probability update chain explicitly in this format:
+  Base rate: X% (reference class: [describe class])
+    [+/-N%] [reason] (epistemic or aleatory)
+    [+/-N%] [reason]
+    ... (list every material adjustment)
+    ────
+  Final estimate: ~X%
+If prediction market data is provided, add it as a separate line and explain any divergence greater than 5 percentage points.
 
 ## Key Drivers & Trends
 Identify 4-6 significant forces shaping the trajectory, ranked by impact.
@@ -111,28 +126,31 @@ Identify 4-6 significant forces shaping the trajectory, ranked by impact.
 ## Scenario Analysis
 Present 3 scenarios (Optimistic / Base Case / Pessimistic). Each must include:
 - Probability (%) — must sum to ~100%
-- Key conditions required
+- Path: [specific event] → [causes X] → [leads to outcome] (causal chain, not just conditions)
 - Expected outcome with specific metrics
 
 ## Predictions Table
-| Timeframe | Prediction | Confidence | Key Assumption |
-|-----------|-----------|------------|----------------|
-(List 5-7 specific, falsifiable predictions)
+| Timeframe | Prediction | Confidence | Key Assumption | Resolved When |
+|-----------|------------|------------|----------------|---------------|
+(List 5-7 predictions. "Resolved When" must be a specific, observable, measurable event — no vague language)
 
 ## Wild Cards
-3-4 low-probability, high-impact events that could dramatically alter the trajectory.
+3-4 low-probability, high-impact events. Each must include an explicit probability estimate (e.g., ~4%) and a one-line impact description.
+
+## Steelman
+Make the strongest possible case that your base case is wrong. What would a well-informed skeptic say? What evidence might you be underweighting? This is not a list of risks — it is the best single argument against your conclusion.
 
 ## Pre-Mortem
-Assume the base case was wrong 12 months from now. What most likely caused it to fail?
+Assume the base case was wrong 12 months from now. What single failure most likely caused it?
 
 ## Bottom Line
-2-3 sentences synthesizing the most likely outcome, what would invalidate it, and the single most important variable to watch.
+State the most likely outcome. Then write one sentence in this exact form: "If [the single most important variable] moves from [current value] to [threshold value], base case probability shifts from ~X% to ~Y%." Then state what would invalidate the forecast entirely.
 
 Guidelines:
-- Separate epistemic uncertainty from aleatory uncertainty
-- Assign explicit probability ranges (e.g., 60-70%)
+- Epistemic uncertainty = unknown but knowable facts; aleatory = inherent randomness. Label adjustments in the update chain accordingly
 - Every claim must reference the provided research data
-- Be specific and quantitative — no vague language`
+- Be specific and quantitative — no vague language
+- Resist probability compression: if the evidence is strong, let the number be 80%+; if weak, let it be 20%-`
 
 export function buildResearchPrompt(topic: string, horizon: string, today: string): string {
   return `Today's date: ${today}
