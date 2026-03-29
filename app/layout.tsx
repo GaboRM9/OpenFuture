@@ -45,25 +45,10 @@ export default function RootLayout({
               </span>
             </Link>
 
-            <div className="flex items-center gap-1" style={{ color: 'var(--green-muted)' }}>
-              <span className="text-xs mr-3 hidden sm:block tracking-wider">
-                SYS:ONLINE
-              </span>
-              <Link
-                href="/"
-                className="px-3 py-1 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)] border"
-                style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
-              >
-                [FORECAST]
-              </Link>
-              <Link
-                href="/history"
-                className="px-3 py-1 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)] border"
-                style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
-              >
-                [HISTORY]
-              </Link>
-            </div>
+            <span className="flex items-center gap-2 text-xs tracking-wider" style={{ color: 'var(--green-muted)' }}>
+              <span className="h-2 w-2 rounded-full" style={{ background: 'var(--green-bright)', boxShadow: '0 0 5px 1px var(--green-bright)' }} />
+              SYS:ONLINE
+            </span>
           </div>
         </nav>
 
