@@ -62,6 +62,10 @@ function extractBottomLine(content: string): string | null {
   return match[1].replace(/[*_#`▌▶█]/g, '').trim()
 }
 
+function stripBottomLine(content: string): string {
+  return content.replace(/\n?##\s*Bottom Line\s*\n[\s\S]*?(?=\n##|$)/, '')
+}
+
 export default function ForecastStream({ topic, horizon, mode, onReset }: Props) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
@@ -324,7 +328,7 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
                     </blockquote>
                   ),
                 }}
-              >{content}</ReactMarkdown>
+              >{status === 'done' ? stripBottomLine(content) : content}</ReactMarkdown>
               {status === 'streaming' && (
                 <span
                   className="cursor-blink ml-0.5 inline-block"
