@@ -30,8 +30,10 @@ const HORIZONS = [
   { label: '2Y',  value: '2 years' },
 ]
 
+type Mode = 'light' | 'deep'
+
 type Props = {
-  onSubmit: (topic: string, horizon: string) => void
+  onSubmit: (topic: string, horizon: string, mode: Mode) => void
   loading: boolean
 }
 
@@ -39,6 +41,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   const [topic, setTopic] = useState('')
   const [horizon, setHorizon] = useState('3 months')
   const [custom, setCustom] = useState('')
+  const [mode, setMode] = useState<Mode>('light')
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
 
   const isCustom = horizon === '__custom__'
@@ -54,46 +57,87 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!topic.trim() || !activeHorizon) return
-    onSubmit(topic.trim(), activeHorizon)
+    onSubmit(topic.trim(), activeHorizon, mode)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-6">
+    <form onSubmit={handleSubmit} className="w-full space-y-4">
 
-      {/* Topic input */}
-      <div>
-        <label
-          htmlFor="topic"
-          className="block text-xs tracking-widest uppercase mb-2"
+      {/* Topic + mode + submit — single row */}
+      <div
+        className="flex items-stretch border"
+        style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
+      >
+        <span
+          className="flex items-center px-3 text-sm select-none glow-sm shrink-0"
           style={{ color: 'var(--green-muted)' }}
         >
-          ── QUERY SUBJECT
-        </label>
+          &gt;_
+        </span>
+        <input
+          id="topic"
+          type="text"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder={PLACEHOLDERS[placeholderIdx]}
+          className="flex-1 bg-transparent py-4 text-sm outline-none placeholder:opacity-30 min-w-0"
+          style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
+          disabled={loading}
+          autoFocus
+          autoComplete="off"
+          spellCheck={false}
+        />
+
+        {/* Mode dropdown */}
         <div
-          className="flex items-center border"
-          style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
+          className="flex items-center shrink-0 border-l"
+          style={{ borderColor: 'var(--green-border)' }}
         >
-          <span
-            className="px-3 text-sm select-none glow-sm"
-            style={{ color: 'var(--green-muted)' }}
-          >
-            &gt;_
-          </span>
-          <input
-            id="topic"
-            type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder={PLACEHOLDERS[placeholderIdx]}
-            className="flex-1 bg-transparent py-3 pr-4 text-sm outline-none placeholder:opacity-30"
-            style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
-            disabled={loading}
-            autoFocus
-            autoComplete="off"
-            spellCheck={false}
-          />
+          <div className="relative flex items-center">
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as Mode)}
+              disabled={loading}
+              className="appearance-none bg-transparent px-3 py-4 text-xs tracking-widest uppercase outline-none cursor-pointer pr-6"
+              style={{ color: 'var(--green-muted)' }}
+            >
+              <option value="light" style={{ background: '#0a0f0a', color: '#6abf6a' }}>LIGHT</option>
+              <option value="deep" style={{ background: '#0a0f0a', color: '#6abf6a' }}>DEEP</option>
+            </select>
+            <span
+              className="pointer-events-none absolute right-2 text-xs"
+              style={{ color: 'var(--green-muted)' }}
+            >
+              ▾
+            </span>
+          </div>
         </div>
+
+        {/* Submit button */}
+        <button
+          type="submit"
+          disabled={loading || !topic.trim() || !activeHorizon}
+          className="flex items-center gap-2 px-5 text-xs tracking-widest uppercase font-bold border-l transition-all disabled:cursor-not-allowed disabled:opacity-30 shrink-0"
+          style={{
+            borderColor: 'var(--green-border)',
+            background: topic.trim() && !loading ? 'var(--green-faint)' : 'transparent',
+            color: 'var(--green-bright)',
+          }}
+        >
+          {loading ? (
+            <span className="cursor-blink">▋</span>
+          ) : (
+            '▶'
+          )}
+        </button>
       </div>
+
+      {/* Mode hint */}
+      <p className="text-xs" style={{ color: 'var(--green-faint)' }}>
+        {mode === 'light'
+          ? 'LIGHT — 3 searches · concise · fast'
+          : 'DEEP — 6-7 searches · base rates · pre-mortem · full analysis'}
+      </p>
 
       {/* Horizon */}
       <div>
@@ -113,16 +157,8 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
               className="px-4 py-1.5 text-xs tracking-widest uppercase border transition-all"
               style={
                 horizon === value
-                  ? {
-                      background: 'var(--green-faint)',
-                      borderColor: 'var(--green)',
-                      color: 'var(--green-bright)',
-                    }
-                  : {
-                      background: 'transparent',
-                      borderColor: 'var(--green-border)',
-                      color: 'var(--green-muted)',
-                    }
+                  ? { background: 'var(--green-faint)', borderColor: 'var(--green)', color: 'var(--green-bright)' }
+                  : { background: 'transparent', borderColor: 'var(--green-border)', color: 'var(--green-muted)' }
               }
             >
               {label}
@@ -135,16 +171,8 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
             className="px-4 py-1.5 text-xs tracking-widest uppercase border transition-all"
             style={
               isCustom
-                ? {
-                    background: 'var(--green-faint)',
-                    borderColor: 'var(--green)',
-                    color: 'var(--green-bright)',
-                  }
-                : {
-                    background: 'transparent',
-                    borderColor: 'var(--green-border)',
-                    color: 'var(--green-muted)',
-                  }
+                ? { background: 'var(--green-faint)', borderColor: 'var(--green)', color: 'var(--green-bright)' }
+                : { background: 'transparent', borderColor: 'var(--green-border)', color: 'var(--green-muted)' }
             }
           >
             CUSTOM
@@ -178,27 +206,6 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
           SELECTED: {activeHorizon ? activeHorizon.toUpperCase() : '—'}
         </p>
       </div>
-
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={loading || !topic.trim() || !activeHorizon}
-        className="w-full py-3 text-sm tracking-widest uppercase font-bold border transition-all disabled:cursor-not-allowed disabled:opacity-30"
-        style={{
-          background: topic.trim() && !loading ? 'var(--green-faint)' : 'transparent',
-          borderColor: 'var(--green-muted)',
-          color: 'var(--green-bright)',
-        }}
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="cursor-blink">▋</span>
-            INITIALIZING...
-          </span>
-        ) : (
-          '▶ EXECUTE ANALYSIS'
-        )}
-      </button>
 
     </form>
   )

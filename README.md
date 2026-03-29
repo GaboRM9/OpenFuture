@@ -90,6 +90,128 @@ User submits topic + horizon + mode
 
 ---
 
+## Forecasting Logic
+
+### Pipeline
+
+Every forecast request runs through a deterministic sequence before a single word is streamed to the client.
+
+```
+1. Market priors fetch (parallel)
+   ├── Metaculus API → top 5 open questions matching topic → community median %
+   └── Polymarket API → top 3 active markets matching topic → YES price %
+        │
+        ▼ injected as PREDICTION MARKET PRIORS into synthesis prompt
+
+2. LIGHT MODE
+   └── Haiku 4.5 + web_search
+       ├── Search 1: current state of topic
+       ├── Search 2: recent developments
+       └── Search 3: expert outlook
+       → stream forecast
+
+   DEEP MODE
+   ├── Pass 1 — Research (Haiku 4.5 + web_search, 8-10 searches)
+   │   Searches cover: current state · recent data signals · expert forecasts ·
+   │   historical base rates · reference class data · contrarian views ·
+   │   macro/geopolitical factors · sector trends · wild card risks ·
+   │   Metaculus + Polymarket crowd probabilities
+   │   → outputs structured evidence JSON
+   │
+   ├── Pass 1.5 — Compression (Haiku 4.5, no tools)
+   │   Reduces evidence JSON: ≤20 words per string, ≤5 items per array
+   │   Preserves every unique fact, data point, and source
+   │   → compressed evidence bundle
+   │
+   └── Pass 2 — Synthesis (Opus 4.6, no tools)
+       Receives: compressed evidence + market priors + horizon strategy
+       → streams full structured forecast
+
+3. Chart generation (Sonnet 4.6 + web_search, runs after forecast completes)
+   Identifies the single most relevant quantifiable metric for the topic,
+   fetches real historical values, projects forward from today
+   → JSON chart data rendered by Recharts
+```
+
+---
+
+### Horizon Strategy
+
+The time horizon changes what kind of evidence the model is told to prioritize. Before any search or synthesis, a horizon framing is injected into the prompt:
+
+| Horizon | Strategy |
+|---------|----------|
+| Days / weeks / short months | Near-term momentum dominates. Focus on specific upcoming catalysts and existing trajectories. Structural trends are largely irrelevant. |
+| Medium months | Balance current momentum with structural forces. Identify the 1-2 inflection points most likely to determine the outcome within the window. |
+| Years / decades | Structural trends, base rates, and fundamental drivers dominate over near-term noise. Emphasize technology curves, demographic shifts, and historical analogues. |
+
+---
+
+### Probability Methodology
+
+The engine is instructed to produce calibrated probabilities using a Bayesian update chain, not intuitive point estimates.
+
+**Step 1 — Identify the reference class**
+Before touching current conditions, the model must answer: *"In similar past situations, what fraction resolved this way?"* This base rate is stated explicitly.
+
+**Step 2 — Apply adjustments**
+Each material factor that differs from the reference class adds or subtracts from the base rate. Every adjustment is labeled as either:
+- **Epistemic** — unknown but knowable (could be resolved with more research)
+- **Aleatory** — inherent randomness (irreducible uncertainty)
+
+**Step 3 — Cross-check against prediction markets**
+If Metaculus or Polymarket data is available, the model cites the crowd probability as a separate data point. Any divergence greater than 5 percentage points must be explained.
+
+**Step 4 — Resist compression**
+The model is explicitly instructed not to cluster probabilities near 50%. If evidence is strong, estimates should reflect that (80%+). If evidence is weak, they should reflect that too (sub-30%).
+
+**Deep mode update chain format:**
+```
+Base rate: X%  (reference class: [description])
+  [+N%] reason  (epistemic)
+  [-N%] reason  (aleatory)
+  [+N%] reason  (epistemic)
+  ────
+Final estimate: ~X%
+
+Prediction market: Y% (Metaculus, n=NNN) — divergence: [explanation]
+```
+
+---
+
+### Evidence Schema (Deep Mode)
+
+Pass 1 outputs a structured JSON object. Pass 2 synthesizes exclusively from this — no additional web access.
+
+```json
+{
+  "current_state": "concise summary with key facts and metrics",
+  "data_signals": ["signal with source", "..."],
+  "expert_forecasts": ["forecast with attribution", "..."],
+  "base_rates": "reference class description and historical base rate %",
+  "historical_analogues": ["analogue 1", "..."],
+  "contrarian_views": ["view 1", "..."],
+  "macro_factors": ["factor 1", "..."],
+  "wild_card_risks": ["risk 1", "..."],
+  "key_uncertainties": ["uncertainty 1", "..."],
+  "prediction_market_probability": "crowd probability from Metaculus/Polymarket, or 'not found'"
+}
+```
+
+---
+
+### Forecast Integrity Rules
+
+Rules embedded in the synthesis prompt that govern every deep forecast:
+
+- Every claim must reference the provided research data — no hallucinated evidence
+- Every prediction in the table must include a "Resolved When" column — a specific, observable, measurable event (no vague language)
+- Scenario probabilities must sum to ~100%
+- The Bottom Line must include: most likely outcome · the single most important variable to watch · what would invalidate the forecast entirely
+- The Steelman section is not a list of risks — it is the single strongest argument that the base case is wrong, written as a well-informed skeptic would make it
+
+---
+
 ## Setup
 
 ```bash
