@@ -194,24 +194,6 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
         </div>
       )}
 
-      {/* Bottom Line card — shown when done */}
-      {bottomLine && (
-        <div
-          className="border-l-2 px-5 py-4"
-          style={{ borderColor: 'var(--green-dim)', background: 'var(--bg-panel)' }}
-        >
-          <p
-            className="text-xs tracking-widest uppercase mb-2"
-            style={{ color: 'var(--green-muted)' }}
-          >
-            ▶ BOTTOM LINE
-          </p>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--green)' }}>
-            {bottomLine}
-          </p>
-        </div>
-      )}
-
       {/* Forecast terminal window */}
       <div
         className="border"
@@ -310,6 +292,22 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
                 >
                   ▋
                 </span>
+              )}
+              {status === 'done' && bottomLine && (
+                <div
+                  className="border-l-2 px-5 py-4 mt-6"
+                  style={{ borderColor: 'var(--green-dim)', background: 'var(--bg)' }}
+                >
+                  <p
+                    className="text-xs tracking-widest uppercase mb-2"
+                    style={{ color: 'var(--green-muted)' }}
+                  >
+                    ▶ CONCLUSION
+                  </p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--green)' }}>
+                    {bottomLine}
+                  </p>
+                </div>
               )}
             </div>
           )}
