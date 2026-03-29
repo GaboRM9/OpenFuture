@@ -96,10 +96,11 @@ After completing all searches, output ONLY a raw JSON object — no markdown, no
   "prediction_market_probability": "current crowd probability from Metaculus/Polymarket if found, e.g. '41% (Metaculus, n=320)' or 'not found'"
 }`
 
-export const COMPRESS_RESEARCH_PROMPT = `Compress the following research JSON to be maximally concise. Rules:
-- Preserve every unique fact, data point, and source
-- Max 20 words per string value
-- Max 5 items per array (keep the most important)
+export const COMPRESS_RESEARCH_PROMPT = `Compress the following research JSON to remove redundancy while preserving analytical value. Rules:
+- Preserve every unique fact, data point, number, and source attribution
+- Max 60 words per string value
+- Max 10 items per array (keep the most important)
+- NEVER compress or truncate base_rates or historical_analogues — these are load-bearing for probability calibration
 - Output ONLY valid JSON — no markdown, no commentary, no code blocks
 - Keep the exact same keys`
 
@@ -150,15 +151,17 @@ Guidelines:
 - Epistemic uncertainty = unknown but knowable facts; aleatory = inherent randomness. Label adjustments in the update chain accordingly
 - Every claim must reference the provided research data
 - Be specific and quantitative — no vague language
-- Resist probability compression: if the evidence is strong, let the number be 80%+; if weak, let it be 20%-`
+- Resist probability compression: if the evidence is strong, let the number be 80%+; if weak, let it be 20%-
+- If your final estimate diverges from the base rate by more than 20 percentage points, you MUST explicitly name the specific evidence that justifies that magnitude of update
+- If no prediction market data was found for this topic, state that explicitly — do not imply crowd validation that does not exist`
 
-export function buildResearchPrompt(topic: string, horizon: string, today: string): string {
+export function buildResearchPrompt(topic: string, horizon: string, today: string, marketContext?: string): string {
   return `Today's date: ${today}
 Research topic: "${topic}"
 Time Horizon: ${horizon} (starting from ${today})
 
 ${getHorizonFraming(horizon)}
-
+${marketContext ? `\nPREDICTION MARKET CONTEXT (use this to guide your searches — find evidence that explains or challenges these crowd probabilities):\n${marketContext}\n` : ''}
 Run all web searches using ${today} as your reference for what is current, then output your findings as a raw JSON object.`
 }
 

@@ -11,9 +11,19 @@ import {
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+function extractKeywords(topic: string): string {
+  const stopWords = new Set(['will', 'the', 'a', 'an', 'is', 'are', 'be', 'in', 'of', 'to', 'and', 'or', 'for', 'by', 'on', 'at', 'from', 'with', 'that', 'this', 'it', 'do', 'does', 'can', 'has', 'have', 'had', 'was', 'were', 'what', 'when', 'how', 'why', 'who'])
+  return topic
+    .split(/\s+/)
+    .filter(w => w.length > 3 && !stopWords.has(w.toLowerCase()))
+    .slice(0, 4)
+    .join(' ')
+}
+
 async function fetchMetaculusContext(topic: string): Promise<string> {
   try {
-    const url = `https://www.metaculus.com/api2/questions/?search=${encodeURIComponent(topic)}&status=open&limit=5&type=forecast`
+    const keywords = extractKeywords(topic)
+    const url = `https://www.metaculus.com/api2/questions/?search=${encodeURIComponent(keywords)}&status=open&limit=5&type=forecast`
     const res = await fetch(url, {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(4000),
@@ -110,22 +120,31 @@ export async function POST(request: Request) {
         if (isDeep) {
           // Pass 1: research agent gathers evidence into structured JSON
           const researchMessage = await anthropic.messages.create({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 3000,
+            model: 'claude-sonnet-4-6',
+            max_tokens: 6000,
             system: DEEP_RESEARCH_PROMPT,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             tools: [{ type: 'web_search_20260209', name: 'web_search', allowed_callers: ['direct'] }] as any,
-            messages: [{ role: 'user', content: buildResearchPrompt(topic, horizon, today) }],
+            messages: [{ role: 'user', content: buildResearchPrompt(topic, horizon, today, marketContext) }],
           })
           const rawResearch = extractResearchText(researchMessage)
+
+          // Validate research JSON before compressing — truncated JSON causes silent synthesis failures
+          let validatedResearch = rawResearch
+          try {
+            JSON.parse(rawResearch)
+          } catch {
+            // Research was likely truncated; attempt to salvage by re-wrapping
+            validatedResearch = rawResearch.endsWith('}') ? rawResearch : rawResearch + '"}'
+          }
 
           // Pass 1.5: compress research JSON before passing to Opus
           const compressionMessage = await anthropic.messages.create({
             model: 'claude-haiku-4-5-20251001',
-            max_tokens: 1500,
+            max_tokens: 3000,
             messages: [{
               role: 'user',
-              content: `${COMPRESS_RESEARCH_PROMPT}\n\n${rawResearch}`,
+              content: `${COMPRESS_RESEARCH_PROMPT}\n\n${validatedResearch}`,
             }],
           })
           const researchData = extractResearchText(compressionMessage)
