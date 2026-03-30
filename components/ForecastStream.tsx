@@ -135,7 +135,7 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
         fetch('/api/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, horizon, content: full }),
+          body: JSON.stringify({ topic, horizon, content: full, mode }),
         })
           .then((r) => r.json())
           .then(({ id }) => { if (id) setForecastId(id) })

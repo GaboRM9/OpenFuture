@@ -12,3 +12,23 @@ export type Forecast = {
   content: string
   created_at: string
 }
+
+export type PredictionRunStatus = 'pending' | 'correct' | 'incorrect' | 'partial'
+
+export type PredictionRun = {
+  id: string
+  forecast_id: string
+  topic: string
+  horizon: string
+  mode: 'light' | 'deep'
+  predictions: Array<{
+    prediction_text: string
+    confidence: number | null
+    timeframe: string | null
+    resolution_criteria: string | null
+  }>
+  status: PredictionRunStatus
+  reviewed_at: string | null
+  notes: string | null
+  created_at: string
+}
