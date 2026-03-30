@@ -10,6 +10,7 @@ import {
 } from '@/lib/oracle-prompt'
 import { validateTopic, validateHorizon, validateMode } from '@/lib/validate'
 import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -213,6 +214,7 @@ export async function POST(request: Request) {
 
         controller.close()
       } catch (err) {
+        logger.error('Forecast stream failed', err, { topic, horizon, mode })
         controller.error(err)
       }
     },
