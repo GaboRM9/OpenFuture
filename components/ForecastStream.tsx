@@ -75,8 +75,10 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
   const [forecastId, setForecastId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
+  const [retryKey, setRetryKey] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const loadingMessages = getLoadingMessages(topic, mode)
 
@@ -90,10 +92,26 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
   }, [status, loadingMessages.length])
 
   useEffect(() => {
+    // Reset state on each run (including retries)
+    setContent('')
+    setStatus('loading')
+    setError('')
+    setChartData(null)
+    setChartLoading(true)
+    setForecastId(null)
+
     const controller = new AbortController()
     abortRef.current = controller
     // Abort automatically after 6 minutes — server caps at 5 min, give 1 min buffer
     const timeoutId = setTimeout(() => controller.abort(), 6 * 60 * 1000)
+
+    function scheduleScroll() {
+      if (scrollTimerRef.current) return
+      scrollTimerRef.current = setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        scrollTimerRef.current = null
+      }, 150)
+    }
 
     async function runForecast(): Promise<string> {
       try {
@@ -118,7 +136,7 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
             const chunk = decoder.decode(value, { stream: true })
             full += chunk
             setContent(full)
-            bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+            scheduleScroll()
           }
         } finally {
           reader.releaseLock()
@@ -172,8 +190,12 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
 
     runAll()
 
-    return () => { clearTimeout(timeoutId); controller.abort() }
-  }, [topic, horizon])
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
+    }
+  }, [topic, horizon, retryKey])
 
   function handleShare() {
     if (!forecastId) return
@@ -288,11 +310,18 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
 
           {status === 'error' && (
             <div
-              className="border p-4"
+              className="border p-4 space-y-3"
               style={{ borderColor: 'var(--red)', color: 'var(--red)' }}
             >
-              <p className="text-xs tracking-widest uppercase mb-1">✕ TRANSMISSION FAILED</p>
+              <p className="text-xs tracking-widest uppercase">✕ TRANSMISSION FAILED</p>
               <p className="text-xs">{error}</p>
+              <button
+                onClick={() => setRetryKey((k) => k + 1)}
+                className="text-xs tracking-widest uppercase border px-3 py-1 transition-all hover:bg-[rgba(255,68,68,0.1)]"
+                style={{ borderColor: 'var(--red)', color: 'var(--red)' }}
+              >
+                [RETRY]
+              </button>
             </div>
           )}
 
