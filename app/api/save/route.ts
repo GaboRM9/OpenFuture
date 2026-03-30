@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { validateTopic, validateHorizon, validateContent } from '@/lib/validate'
 import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: Request) {
   const { allowed, retryAfter } = rateLimit(getIp(request), { limit: 20, windowMs: 60_000 })
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
-    console.error('Save error:', error.message)
+    logger.error('Failed to save forecast', error, { topic, horizon })
     return Response.json({ error: error.message }, { status: 500 })
   }
 

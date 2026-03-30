@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { validateTopic, validateHorizon } from '@/lib/validate'
 import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -70,6 +71,7 @@ Rules:
       .pop()
 
     if (!textBlock || textBlock.type !== 'text') {
+      logger.warn('Chart API returned no text block', { topic, horizon })
       return Response.json({ error: 'No data returned' }, { status: 500 })
     }
 
@@ -77,13 +79,14 @@ Rules:
     const raw = textBlock.text.trim()
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
+      logger.warn('Chart API response contained no valid JSON', { topic, horizon, raw: raw.slice(0, 200) })
       return Response.json({ error: 'Invalid JSON response' }, { status: 500 })
     }
 
     const chartData = JSON.parse(jsonMatch[0])
     return Response.json(chartData)
   } catch (err) {
-    console.error('Chart API error:', err)
+    logger.error('Chart API failed', err, { topic, horizon })
     return Response.json({ error: 'Failed to generate chart data' }, { status: 500 })
   }
 }
