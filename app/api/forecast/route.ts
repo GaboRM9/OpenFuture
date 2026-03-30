@@ -14,6 +14,11 @@ import { logger } from '@/lib/logger'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+const MODEL_RESEARCH  = process.env.MODEL_RESEARCH  ?? 'claude-sonnet-4-6'
+const MODEL_COMPRESS  = process.env.MODEL_COMPRESS  ?? 'claude-haiku-4-5-20251001'
+const MODEL_SYNTHESIS = process.env.MODEL_SYNTHESIS ?? 'claude-opus-4-6'
+const MODEL_LIGHT     = process.env.MODEL_LIGHT     ?? 'claude-haiku-4-5-20251001'
+
 async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -147,7 +152,7 @@ export async function POST(request: Request) {
         if (isDeep) {
           // Pass 1: research agent gathers evidence into structured JSON
           const researchMessage = await anthropic.messages.create({
-            model: 'claude-sonnet-4-6',
+            model: MODEL_RESEARCH,
             max_tokens: 6000,
             system: DEEP_RESEARCH_PROMPT,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,7 +172,7 @@ export async function POST(request: Request) {
 
           // Pass 1.5: compress research JSON before passing to Opus
           const compressionMessage = await anthropic.messages.create({
-            model: 'claude-haiku-4-5-20251001',
+            model: MODEL_COMPRESS,
             max_tokens: 3000,
             messages: [{
               role: 'user',
@@ -178,7 +183,7 @@ export async function POST(request: Request) {
 
           // Pass 2: Opus synthesizes from the structured evidence
           messageStream = anthropic.messages.stream({
-            model: 'claude-opus-4-6',
+            model: MODEL_SYNTHESIS,
             max_tokens: 8000,
             system: DEEP_SYNTHESIS_PROMPT,
             messages: [{
@@ -189,7 +194,7 @@ export async function POST(request: Request) {
         } else {
           // Light: single pass with live search
           messageStream = anthropic.messages.stream({
-            model: 'claude-haiku-4-5-20251001',
+            model: MODEL_LIGHT,
             max_tokens: 3000,
             system: LIGHT_SYSTEM_PROMPT,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
