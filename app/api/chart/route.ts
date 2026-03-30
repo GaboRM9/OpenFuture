@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { validateTopic, validateHorizon } from '@/lib/validate'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -14,9 +15,11 @@ const HORIZON_POINTS: Record<string, { count: number; unit: string }> = {
 export async function POST(request: Request) {
   const { topic, horizon, forecastContent, today } = await request.json()
 
-  if (!topic || !horizon) {
-    return Response.json({ error: 'Missing params' }, { status: 400 })
-  }
+  const topicErr = validateTopic(topic)
+  if (topicErr) return Response.json({ error: topicErr }, { status: 400 })
+
+  const horizonErr = validateHorizon(horizon)
+  if (horizonErr) return Response.json({ error: horizonErr }, { status: 400 })
 
   const points = HORIZON_POINTS[horizon] ?? { count: 6, unit: 'month' }
   const currentDate = today ?? new Date().toISOString().split('T')[0]

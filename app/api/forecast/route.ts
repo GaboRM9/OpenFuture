@@ -8,6 +8,7 @@ import {
   buildResearchPrompt,
   buildSynthesisPrompt,
 } from '@/lib/oracle-prompt'
+import { validateTopic, validateHorizon, validateMode } from '@/lib/validate'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -94,11 +95,17 @@ function extractResearchText(message: Anthropic.Message): string {
 }
 
 export async function POST(request: Request) {
-  const { topic, horizon, mode } = await request.json()
+  const body = await request.json()
+  const { topic, horizon, mode } = body
 
-  if (!topic || !horizon) {
-    return new Response('Missing topic or horizon', { status: 400 })
-  }
+  const topicErr = validateTopic(topic)
+  if (topicErr) return new Response(topicErr, { status: 400 })
+
+  const horizonErr = validateHorizon(horizon)
+  if (horizonErr) return new Response(horizonErr, { status: 400 })
+
+  const modeErr = validateMode(mode ?? 'light')
+  if (modeErr) return new Response(modeErr, { status: 400 })
 
   const isDeep = mode === 'deep'
   const today = new Date().toISOString().split('T')[0]
