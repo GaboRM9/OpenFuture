@@ -61,7 +61,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-4">
+    <form onSubmit={handleSubmit} className="w-full space-y-4" aria-label="Forecast query form">
 
       {/* Topic + mode + submit — single row */}
       <div
@@ -86,6 +86,8 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
           autoFocus
           autoComplete="off"
           spellCheck={false}
+          aria-label="Forecast topic"
+          aria-required="true"
         />
 
         {/* Mode dropdown */}
@@ -100,6 +102,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
               disabled={loading}
               className="appearance-none bg-transparent px-3 py-4 text-xs tracking-widest uppercase outline-none cursor-pointer pr-6"
               style={{ color: 'var(--green-muted)' }}
+              aria-label="Forecast mode"
             >
               <option value="light" style={{ background: '#0a0f0a', color: '#6abf6a' }}>LIGHT</option>
               <option value="deep" style={{ background: '#0a0f0a', color: '#6abf6a' }}>DEEP</option>

@@ -19,6 +19,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistMono.variable} h-full`}>
       <body className="flex min-h-full flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1 focus:text-xs focus:tracking-widest focus:uppercase"
+          style={{ background: 'var(--bg)', color: 'var(--green-bright)', border: '1px solid var(--green)' }}
+        >
+          Skip to content
+        </a>
         <nav
           className="sticky top-0 z-10 border-b"
           style={{ borderColor: 'var(--green-border)', background: 'var(--bg)' }}
@@ -52,7 +59,7 @@ export default function RootLayout({
           </div>
         </nav>
 
-        <div className="flex flex-1 flex-col">{children}</div>
+        <div id="main-content" className="flex flex-1 flex-col">{children}</div>
       </body>
     </html>
   )

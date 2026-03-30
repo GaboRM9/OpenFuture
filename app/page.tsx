@@ -12,6 +12,10 @@ function HelpModal({ onClose }: { onClose: () => void }) {
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: 'rgba(0,0,0,0.7)' }}
       onClick={onClose}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label="How to use OpenFuture"
     >
       <div
         className="w-full max-w-lg border p-6 space-y-5"
