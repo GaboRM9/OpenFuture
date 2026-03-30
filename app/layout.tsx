@@ -61,7 +61,7 @@ export default function RootLayout({
                 className="text-xs"
                 style={{ color: 'var(--green-faint)' }}
               >
-                v1.0
+                v0.1.1
               </span>
             </Link>
 
