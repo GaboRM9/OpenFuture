@@ -280,10 +280,4 @@ Open `http://localhost:3000`.
 
 ---
 
-
-**20 — Discord / Slack Integration**
-`/forecast AGI timeline 5 years` in any channel. Returns the bottom line + key predictions inline. Team forecasting without leaving the conversation.
-
----
-
 > *Signal over noise. Evidence over intuition. Probability over certainty.*
