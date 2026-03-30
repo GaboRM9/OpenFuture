@@ -1,11 +1,17 @@
 import { supabase } from '@/lib/supabase'
+import { validateTopic, validateHorizon, validateContent } from '@/lib/validate'
 
 export async function POST(request: Request) {
   const { topic, horizon, content } = await request.json()
 
-  if (!topic || !horizon || !content) {
-    return Response.json({ error: 'Missing fields' }, { status: 400 })
-  }
+  const topicErr = validateTopic(topic)
+  if (topicErr) return Response.json({ error: topicErr }, { status: 400 })
+
+  const horizonErr = validateHorizon(horizon)
+  if (horizonErr) return Response.json({ error: horizonErr }, { status: 400 })
+
+  const contentErr = validateContent(content)
+  if (contentErr) return Response.json({ error: contentErr }, { status: 400 })
 
   const { data, error } = await supabase
     .from('forecasts')
