@@ -11,6 +11,20 @@ import {
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const res = await fetch(url, options)
+      if (res.ok) return res
+      if (res.status >= 400 && res.status < 500) throw new Error(`Client error ${res.status}`)
+    } catch (err) {
+      if (attempt === retries - 1) throw err
+    }
+    await new Promise((r) => setTimeout(r, 500 * 2 ** attempt))
+  }
+  throw new Error('Max retries exceeded')
+}
+
 function extractKeywords(topic: string): string {
   const stopWords = new Set(['will', 'the', 'a', 'an', 'is', 'are', 'be', 'in', 'of', 'to', 'and', 'or', 'for', 'by', 'on', 'at', 'from', 'with', 'that', 'this', 'it', 'do', 'does', 'can', 'has', 'have', 'had', 'was', 'were', 'what', 'when', 'how', 'why', 'who'])
   return topic
@@ -24,11 +38,10 @@ async function fetchMetaculusContext(topic: string): Promise<string> {
   try {
     const keywords = extractKeywords(topic)
     const url = `https://www.metaculus.com/api2/questions/?search=${encodeURIComponent(keywords)}&status=open&limit=5&type=forecast`
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(4000),
     })
-    if (!res.ok) return ''
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await res.json()
@@ -55,11 +68,10 @@ async function fetchMetaculusContext(topic: string): Promise<string> {
 async function fetchPolymarketContext(topic: string): Promise<string> {
   try {
     const url = `https://gamma-api.polymarket.com/markets?search=${encodeURIComponent(topic)}&active=true&closed=false&limit=5`
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(4000),
     })
-    if (!res.ok) return ''
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const markets: any[] = await res.json()
