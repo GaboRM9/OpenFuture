@@ -62,6 +62,10 @@ function extractBottomLine(content: string): string | null {
   return match[1].replace(/[*_#`▌▶█]/g, '').trim()
 }
 
+function stripBottomLine(content: string): string {
+  return content.replace(/\n?##\s*Bottom Line\s*\n[\s\S]*?(?=\n##|$)/, '')
+}
+
 export default function ForecastStream({ topic, horizon, mode, onReset }: Props) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
@@ -194,24 +198,6 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
         </div>
       )}
 
-      {/* Bottom Line card — shown when done */}
-      {bottomLine && (
-        <div
-          className="border-l-2 px-5 py-4"
-          style={{ borderColor: 'var(--green-dim)', background: 'var(--bg-panel)' }}
-        >
-          <p
-            className="text-xs tracking-widest uppercase mb-2"
-            style={{ color: 'var(--green-muted)' }}
-          >
-            ▶ BOTTOM LINE
-          </p>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--green)' }}>
-            {bottomLine}
-          </p>
-        </div>
-      )}
-
       {/* Forecast terminal window */}
       <div
         className="border"
@@ -302,7 +288,47 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
 
           {(status === 'streaming' || status === 'done') && (
             <div className="terminal-md text-sm leading-relaxed">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-4">
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>{children}</table>
+                    </div>
+                  ),
+                  tr: ({ children, ...props }) => {
+                    // Color scenario rows based on content
+                    const text = JSON.stringify(props).toLowerCase()
+                    const bg = text.includes('optimistic') ? 'rgba(0,200,80,0.04)'
+                             : text.includes('pessimistic') ? 'rgba(255,68,68,0.04)'
+                             : 'transparent'
+                    return <tr style={{ background: bg }}>{children}</tr>
+                  },
+                  strong: ({ children }) => {
+                    const text = String(children)
+                    if (/\d+%/.test(text)) {
+                      return <strong style={{ color: 'var(--amber)' }}>{children}</strong>
+                    }
+                    return <strong>{children}</strong>
+                  },
+                  code: ({ children, className }) => {
+                    // Inline code — highlight amber
+                    if (!className) {
+                      return (
+                        <code style={{ color: 'var(--amber)', background: 'rgba(255,183,0,0.08)', padding: '0.1em 0.3em', fontSize: '0.9em' }}>
+                          {children}
+                        </code>
+                      )
+                    }
+                    return <code className={className}>{children}</code>
+                  },
+                  blockquote: ({ children }) => (
+                    <blockquote style={{ borderLeft: '2px solid var(--amber)', paddingLeft: '1em', color: 'var(--green-muted)', margin: '0.75em 0', opacity: 0.85 }}>
+                      {children}
+                    </blockquote>
+                  ),
+                }}
+              >{status === 'done' ? stripBottomLine(content) : content}</ReactMarkdown>
               {status === 'streaming' && (
                 <span
                   className="cursor-blink ml-0.5 inline-block"
@@ -310,6 +336,22 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
                 >
                   ▋
                 </span>
+              )}
+              {status === 'done' && bottomLine && (
+                <div
+                  className="border-l-2 px-5 py-4 mt-6"
+                  style={{ borderColor: 'var(--green-dim)', background: 'var(--bg)' }}
+                >
+                  <p
+                    className="text-xs tracking-widest uppercase mb-2"
+                    style={{ color: 'var(--green-muted)' }}
+                  >
+                    ▶ CONCLUSION
+                  </p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--green)' }}>
+                    {bottomLine}
+                  </p>
+                </div>
               )}
             </div>
           )}
