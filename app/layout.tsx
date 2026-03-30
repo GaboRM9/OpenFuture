@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist_Mono } from 'next/font/google'
 import Link from 'next/link'
+import { Clock } from 'lucide-react'
 import './globals.css'
 
 const geistMono = Geist_Mono({
@@ -65,10 +66,15 @@ export default function RootLayout({
               </span>
             </Link>
 
-            <span className="flex items-center gap-2 text-xs tracking-wider" style={{ color: 'var(--green-muted)' }}>
-              <span className="h-2 w-2 rounded-full" style={{ background: 'var(--green-bright)', boxShadow: '0 0 5px 1px var(--green-bright)' }} />
-              SYS:ONLINE
-            </span>
+            <Link
+              href="/predictions"
+              className="flex items-center gap-2 text-xs tracking-wider transition-all hover:opacity-80"
+              style={{ color: 'var(--green-muted)' }}
+              title="Prediction Tracker"
+            >
+              <Clock size={14} />
+              <span className="hidden sm:inline">TRACKER</span>
+            </Link>
           </div>
         </nav>
 

@@ -1,4 +1,4 @@
-# OPEN_FUTURE
+# OPEN_FUTURE `v0.1.2`
 
 > *The present is already the past by the time you read it.*
 
@@ -25,7 +25,7 @@ Fast. Three targeted web searches. Concise predictions with explicit confidence 
 Rigorous. Eight to ten web searches across current state, expert forecasts, base rates, historical analogues, contrarian views, macro factors, and wild card risks. Two-pass architecture:
 
 ```
-Pass 1   →  Haiku research agent runs all searches, outputs structured evidence JSON
+Pass 1   →  Sonnet research agent runs all searches, outputs structured evidence JSON
 Pass 1.5 →  Haiku compresses the evidence (token-efficient, quality-preserving)
 Pass 2   →  Opus synthesizes into a full forecast from compressed evidence
 ```
@@ -37,7 +37,7 @@ Deep mode output includes:
 - **Wild cards** with explicit probability estimates
 - **Steelman** — the strongest case that the base case is wrong
 - **Pre-mortem** — what single failure would most likely cause the forecast to miss
-- **Bottom line** with a sensitivity statement: *"If [variable] moves from X to Y, probability shifts from A% to B%"*
+- **Conclusion** with a sensitivity statement: *"If [variable] moves from X to Y, probability shifts from A% to B%"*
 
 ---
 
@@ -48,7 +48,7 @@ Every forecast is grounded against real-money crowd wisdom. Before synthesis, th
 - **Metaculus** — crowd probability, forecaster count, open questions
 - **Polymarket** — binary market prices, trading volume
 
-If a prediction market exists for your topic, it's cited in the Base Rate Analysis. If the model's estimate diverges by more than 5%, it explains why.
+If a prediction market exists for your topic, it's cited in the Base Rate Analysis. If the model's estimate diverges by more than 5%, it explains why. Both APIs are queried in parallel with exponential-backoff retry before any model pass runs.
 
 ---
 
@@ -57,12 +57,12 @@ If a prediction market exists for your topic, it's cited in the Base Rate Analys
 | Layer | Technology |
 |-------|-----------|
 | Framework | Next.js 16 — App Router, server-side streaming |
-| AI | Claude Haiku 4.5 (research) + Claude Opus 4.6 (synthesis) |
+| AI | Claude Sonnet 4.6 (research) + Claude Haiku 4.5 (compress) + Claude Opus 4.6 (synthesis) |
 | Web Search | Anthropic built-in `web_search_20260209` tool |
 | Database | Supabase — forecast history, shareable URLs |
 | Styling | Tailwind v4 — dark terminal aesthetic by default |
-| Charts | Recharts — metric visualization from forecast data |
 | Rendering | react-markdown + remark-gfm — streamed markdown output |
+| Testing | Vitest — unit tests for validation, rate limiting, and logging |
 
 ---
 
@@ -76,7 +76,7 @@ User submits topic + horizon + mode
         │   → streams forecast directly                                         │
         │                                                                       │
         └── DEEP ────────────────────────────────────────────────────────────── ┤
-            Pass 1: Haiku + web_search (8-10 searches) → research JSON          │
+            Pass 1: Sonnet + web_search (8-10 searches) → research JSON         │
             Pass 1.5: Haiku compresses JSON → tight evidence bundle             │
             Pass 2: Opus synthesizes → streams full forecast                    │
                                                                                 │
@@ -84,7 +84,6 @@ User submits topic + horizon + mode
                                                                                 ▼
                                                             Streamed to client
                                                             Saved to Supabase
-                                                            Chart generated from forecast data
                                                             Shareable URL created
 ```
 
@@ -111,7 +110,7 @@ Every forecast request runs through a deterministic sequence before a single wor
        → stream forecast
 
    DEEP MODE
-   ├── Pass 1 — Research (Haiku 4.5 + web_search, 8-10 searches)
+   ├── Pass 1 — Research (Sonnet 4.6 + web_search, 8-10 searches)
    │   Searches cover: current state · recent data signals · expert forecasts ·
    │   historical base rates · reference class data · contrarian views ·
    │   macro/geopolitical factors · sector trends · wild card risks ·
@@ -126,11 +125,6 @@ Every forecast request runs through a deterministic sequence before a single wor
    └── Pass 2 — Synthesis (Opus 4.6, no tools)
        Receives: compressed evidence + market priors + horizon strategy
        → streams full structured forecast
-
-3. Chart generation (Sonnet 4.6 + web_search, runs after forecast completes)
-   Identifies the single most relevant quantifiable metric for the topic,
-   fetches real historical values, projects forward from today
-   → JSON chart data rendered by Recharts
 ```
 
 ---
@@ -207,7 +201,7 @@ Rules embedded in the synthesis prompt that govern every deep forecast:
 - Every claim must reference the provided research data — no hallucinated evidence
 - Every prediction in the table must include a "Resolved When" column — a specific, observable, measurable event (no vague language)
 - Scenario probabilities must sum to ~100%
-- The Bottom Line must include: most likely outcome · the single most important variable to watch · what would invalidate the forecast entirely
+- The Conclusion must include: most likely outcome · the single most important variable to watch · what would invalidate the forecast entirely
 - The Steelman section is not a list of risks — it is the single strongest argument that the base case is wrong, written as a well-informed skeptic would make it
 
 ---
@@ -226,10 +220,16 @@ Fill in `.env.local`:
 ```env
 ANTHROPIC_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# AI model overrides — optional, defaults shown
+MODEL_RESEARCH=claude-sonnet-4-6
+MODEL_COMPRESS=claude-haiku-4-5-20251001
+MODEL_SYNTHESIS=claude-opus-4-6
+MODEL_LIGHT=claude-haiku-4-5-20251001
 ```
 
-Create the Supabase table:
+Create the Supabase tables:
 
 ```sql
 create table forecasts (
@@ -239,15 +239,71 @@ create table forecasts (
   content    text not null,
   created_at timestamptz default now()
 );
+
+create table prediction_runs (
+  id           uuid primary key default gen_random_uuid(),
+  forecast_id  uuid references forecasts(id) on delete cascade,
+  topic        text not null,
+  horizon      text not null,
+  mode         text not null default 'light' check (mode in ('light', 'deep')),
+  predictions  jsonb not null default '[]',
+  status       text not null default 'pending'
+                 check (status in ('pending', 'correct', 'incorrect', 'partial')),
+  reviewed_at  timestamptz,
+  notes        text,
+  created_at   timestamptz not null default now()
+);
 ```
+
+Migrations are also available in `supabase/migrations/`.
 
 Run:
 
 ```bash
-npm run dev
+npm run dev       # development
+npm run test      # unit tests
+npm run build     # production build
 ```
 
 Open `http://localhost:3000`.
+
+---
+
+## Prediction Tracker
+
+Every completed forecast is automatically logged as a **prediction run** — a single record containing all extracted predictions from the output. Runs are tracked through a resolution lifecycle:
+
+```
+pending  →  correct | partial | incorrect
+```
+
+The `/predictions` page shows all runs with:
+- **Calibration score** — `(correct + partial × 0.5) / resolved` across all reviewed forecasts
+- **Filter tabs** — view by status (all / pending / correct / partial / incorrect)
+- **Per-run actions** — resolve (toggle correct/partial/wrong) or delete with confirmation
+- **Prediction preview** — first 3 extracted predictions with confidence shown inline
+
+Predictions are extracted automatically from completed forecasts:
+- **Deep mode** — parses the `## Predictions Table` markdown table (timeframe, text, confidence, key assumption)
+- **Light mode** — parses the `## Key Predictions` list (text + inline confidence %)
+
+### `prediction_runs` schema
+
+```sql
+create table prediction_runs (
+  id           uuid primary key default gen_random_uuid(),
+  forecast_id  uuid references forecasts(id) on delete cascade,
+  topic        text not null,
+  horizon      text not null,
+  mode         text not null check (mode in ('light', 'deep')),
+  predictions  jsonb not null default '[]',
+  status       text not null default 'pending'
+                 check (status in ('pending', 'correct', 'incorrect', 'partial')),
+  reviewed_at  timestamptz,
+  notes        text,
+  created_at   timestamptz not null default now()
+);
+```
 
 ---
 
@@ -256,11 +312,25 @@ Open `http://localhost:3000`.
 | Route | Description |
 |-------|-------------|
 | `/` | Main forecast interface |
-| `/history` | All past forecasts, newest first |
+| `/history` | Paginated forecast history, newest first |
 | `/forecast/[id]` | Individual shareable forecast |
+| `/predictions` | Prediction Tracker — resolve and calibrate runs |
 | `/api/forecast` | Streaming POST — topic, horizon, mode |
-| `/api/save` | Saves completed forecast to Supabase |
-| `/api/chart` | Extracts metric data from forecast text for chart rendering |
+| `/api/save` | Saves forecast to Supabase and logs a prediction run |
+| `/api/delete` | Deletes a forecast by ID |
+| `/api/resolve-prediction` | Marks a prediction run correct/partial/incorrect |
+| `/api/delete-prediction-run` | Deletes a prediction run by ID |
+
+---
+
+## Reliability & Security
+
+- **Rate limiting** — sliding window: 5 req/min on `/api/forecast`, 20 req/min on `/api/save`
+- **Input validation** — topic (1–500 chars), horizon (enum), mode (enum), content (1–100k chars)
+- **Timeouts** — 2-minute server timeout on research/compression passes, 5-minute on synthesis stream, 6-minute client-side abort
+- **Retry logic** — exponential backoff (3 attempts) for Metaculus and Polymarket API calls
+- **Security headers** — `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, and a strict CSP via `next.config.ts`
+- **Structured logging** — timestamped JSON-style logs via `lib/logger.ts`
 
 ---
 
@@ -275,7 +345,7 @@ Open `http://localhost:3000`.
 ## Wild Cards                ← explicit probabilities per card
 ## Steelman                  ← strongest case against the base case
 ## Pre-Mortem                ← most likely single cause of failure
-## Bottom Line               ← outcome + sensitivity statement + invalidation condition
+## Conclusion                ← outcome + sensitivity statement + invalidation condition
 ```
 
 ---
