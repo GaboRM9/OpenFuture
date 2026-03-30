@@ -117,6 +117,10 @@ export async function POST(request: Request) {
       try {
         let messageStream: ReturnType<typeof anthropic.messages.stream>
 
+        // Timeouts: 2 min for research/compression passes, 5 min for synthesis stream
+        const T2MIN = AbortSignal.timeout(2 * 60 * 1000)
+        const T5MIN = AbortSignal.timeout(5 * 60 * 1000)
+
         if (isDeep) {
           // Pass 1: research agent gathers evidence into structured JSON
           const researchMessage = await anthropic.messages.create({
@@ -126,7 +130,7 @@ export async function POST(request: Request) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             tools: [{ type: 'web_search_20260209', name: 'web_search', allowed_callers: ['direct'] }] as any,
             messages: [{ role: 'user', content: buildResearchPrompt(topic, horizon, today, marketContext) }],
-          })
+          }, { signal: T2MIN })
           const rawResearch = extractResearchText(researchMessage)
 
           // Validate research JSON before compressing — truncated JSON causes silent synthesis failures
@@ -146,7 +150,7 @@ export async function POST(request: Request) {
               role: 'user',
               content: `${COMPRESS_RESEARCH_PROMPT}\n\n${validatedResearch}`,
             }],
-          })
+          }, { signal: T2MIN })
           const researchData = extractResearchText(compressionMessage)
 
           // Pass 2: Opus synthesizes from the structured evidence
@@ -158,7 +162,7 @@ export async function POST(request: Request) {
               role: 'user',
               content: buildSynthesisPrompt(topic, horizon, today, researchData, marketContext),
             }],
-          })
+          }, { signal: T5MIN })
         } else {
           // Light: single pass with live search
           messageStream = anthropic.messages.stream({
@@ -171,7 +175,7 @@ export async function POST(request: Request) {
               role: 'user',
               content: buildForecastPrompt(topic, horizon, today) + (marketContext ? '\n\n' + marketContext : ''),
             }],
-          })
+          }, { signal: T2MIN })
         }
 
         for await (const event of messageStream) {
