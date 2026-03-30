@@ -1,14 +1,28 @@
 import { supabase, type Forecast } from '@/lib/supabase'
 import Link from 'next/link'
+import DeleteButton from '@/components/DeleteButton'
 
 export const dynamic = 'force-dynamic'
 
-export default async function HistoryPage() {
-  const { data: forecasts, error } = await supabase
+const PAGE_SIZE = 20
+
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10))
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+
+  const { data: forecasts, error, count } = await supabase
     .from('forecasts')
-    .select('id, topic, horizon, content, created_at')
+    .select('id, topic, horizon, content, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .limit(20)
+    .range(from, to)
+
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-12">
@@ -26,9 +40,9 @@ export default async function HistoryPage() {
             >
               FORECAST HISTORY
             </h1>
-            {forecasts && (
+            {count != null && (
               <p className="mt-1 text-xs tracking-widest" style={{ color: 'var(--green-faint)' }}>
-                {forecasts.length} ENTRIES FOUND
+                {count} TOTAL ENTRIES · PAGE {page} OF {totalPages || 1}
               </p>
             )}
           </div>
@@ -84,13 +98,10 @@ export default async function HistoryPage() {
               .find((l) => l.trim() && !l.startsWith('#'))
             const date = new Date(forecast.created_at)
             const dateStr = date.toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
-            const index = String(i + 1).padStart(3, '0')
+            const index = String(from + i + 1).padStart(3, '0')
 
             return (
-              <div
-                key={forecast.id}
-                className="log-entry p-4"
-              >
+              <div key={forecast.id} className="log-entry p-4">
                 <div className="flex items-start gap-4">
                   <span
                     className="text-xs font-bold shrink-0 mt-0.5"
@@ -100,12 +111,13 @@ export default async function HistoryPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span
-                        className="text-sm font-bold uppercase tracking-wide truncate"
+                      <Link
+                        href={`/forecast/${forecast.id}`}
+                        className="text-sm font-bold uppercase tracking-wide truncate hover:underline"
                         style={{ color: 'var(--green)' }}
                       >
                         {forecast.topic}
-                      </span>
+                      </Link>
                       <span
                         className="text-xs tracking-widest uppercase border px-2 py-0.5 shrink-0"
                         style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
@@ -122,16 +134,46 @@ export default async function HistoryPage() {
                       </p>
                     )}
                   </div>
-                  <span
-                    className="text-xs shrink-0 hidden sm:block"
-                    style={{ color: 'var(--green-faint)' }}
-                  >
-                    {dateStr}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span
+                      className="text-xs hidden sm:block"
+                      style={{ color: 'var(--green-faint)' }}
+                    >
+                      {dateStr}
+                    </span>
+                    <DeleteButton id={forecast.id} />
+                  </div>
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between text-xs tracking-widest">
+          {page > 1 ? (
+            <Link
+              href={`/history?page=${page - 1}`}
+              className="border px-4 py-2 uppercase transition-all hover:bg-[var(--green-faint)]"
+              style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+            >
+              [← PREV]
+            </Link>
+          ) : <span />}
+          <span style={{ color: 'var(--green-faint)' }}>
+            {page} / {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link
+              href={`/history?page=${page + 1}`}
+              className="border px-4 py-2 uppercase transition-all hover:bg-[var(--green-faint)]"
+              style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+            >
+              [NEXT →]
+            </Link>
+          ) : <span />}
         </div>
       )}
     </main>
