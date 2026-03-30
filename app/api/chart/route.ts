@@ -4,6 +4,7 @@ import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const MODEL_CHART = process.env.MODEL_CHART ?? 'claude-sonnet-4-6'
 
 const HORIZON_POINTS: Record<string, { count: number; unit: string }> = {
   '1 week':   { count: 7,  unit: 'day' },
@@ -59,7 +60,7 @@ Rules:
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: MODEL_CHART,
       max_tokens: 1024,
       tools: [{ type: 'web_search_20260209', name: 'web_search' }],
       messages: [{ role: 'user', content: prompt }],
