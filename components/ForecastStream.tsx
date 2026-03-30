@@ -244,10 +244,13 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
             <span
               className="text-xs tracking-widest uppercase"
               style={{ color: STATUS_COLOR[status] }}
+              role="status"
+              aria-live="polite"
+              aria-label={`Forecast status: ${STATUS_LABEL[status]}`}
             >
               {status === 'loading' || status === 'streaming' ? (
                 <span className="flex items-center gap-1">
-                  <span className="cursor-blink">◈</span>
+                  <span className="cursor-blink" aria-hidden="true">◈</span>
                   {STATUS_LABEL[status]}
                 </span>
               ) : STATUS_LABEL[status]}
