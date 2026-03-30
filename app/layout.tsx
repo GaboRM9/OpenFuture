@@ -9,8 +9,21 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'OPENFUTURE // ORACLE ENGINE',
-  description: 'AI-powered probabilistic forecasting using live web research',
+  title: 'OpenFuture — AI Probabilistic Forecasting',
+  description: 'AI-powered probabilistic forecasting using live web research and real-money prediction market data. Ask any question, get a calibrated probability.',
+  keywords: ['forecasting', 'AI forecast', 'prediction market', 'probabilistic forecasting', 'future predictions', 'Metaculus', 'Polymarket'],
+  openGraph: {
+    title: 'OpenFuture — AI Probabilistic Forecasting',
+    description: 'AI-powered probabilistic forecasting using live web research and real-money prediction market data.',
+    type: 'website',
+    siteName: 'OpenFuture',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'OpenFuture — AI Probabilistic Forecasting',
+    description: 'AI-powered probabilistic forecasting using live web research and real-money prediction market data.',
+  },
+  robots: { index: true, follow: true },
 }
 
 export default function RootLayout({
