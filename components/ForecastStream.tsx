@@ -92,6 +92,8 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
   useEffect(() => {
     const controller = new AbortController()
     abortRef.current = controller
+    // Abort automatically after 6 minutes — server caps at 5 min, give 1 min buffer
+    const timeoutId = setTimeout(() => controller.abort(), 6 * 60 * 1000)
 
     async function runForecast(): Promise<string> {
       try {
@@ -170,7 +172,7 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
 
     runAll()
 
-    return () => controller.abort()
+    return () => { clearTimeout(timeoutId); controller.abort() }
   }, [topic, horizon])
 
   function handleShare() {
