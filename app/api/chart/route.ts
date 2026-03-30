@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { validateTopic, validateHorizon } from '@/lib/validate'
+import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -13,6 +14,9 @@ const HORIZON_POINTS: Record<string, { count: number; unit: string }> = {
 }
 
 export async function POST(request: Request) {
+  const { allowed, retryAfter } = rateLimit(getIp(request), { limit: 10, windowMs: 60_000 })
+  if (!allowed) return rateLimitResponse(retryAfter)
+
   const { topic, horizon, forecastContent, today } = await request.json()
 
   const topicErr = validateTopic(topic)
