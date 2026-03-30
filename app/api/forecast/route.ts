@@ -9,6 +9,7 @@ import {
   buildSynthesisPrompt,
 } from '@/lib/oracle-prompt'
 import { validateTopic, validateHorizon, validateMode } from '@/lib/validate'
+import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -95,8 +96,10 @@ function extractResearchText(message: Anthropic.Message): string {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  const { topic, horizon, mode } = body
+  const { allowed, retryAfter } = rateLimit(getIp(request), { limit: 5, windowMs: 60_000 })
+  if (!allowed) return rateLimitResponse(retryAfter)
+
+  const { topic, horizon, mode } = await request.json()
 
   const topicErr = validateTopic(topic)
   if (topicErr) return new Response(topicErr, { status: 400 })

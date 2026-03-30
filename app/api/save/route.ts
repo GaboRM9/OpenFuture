@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import { validateTopic, validateHorizon, validateContent } from '@/lib/validate'
+import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
+  const { allowed, retryAfter } = rateLimit(getIp(request), { limit: 20, windowMs: 60_000 })
+  if (!allowed) return rateLimitResponse(retryAfter)
+
   const { topic, horizon, content } = await request.json()
 
   const topicErr = validateTopic(topic)
