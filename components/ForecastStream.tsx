@@ -1,11 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-
-const ForecastChart = dynamic(() => import('./ForecastChart'), { ssr: false })
 
 type Props = {
   topic: string
@@ -16,12 +13,6 @@ type Props = {
 
 type Status = 'loading' | 'streaming' | 'done' | 'error'
 
-type ChartData = {
-  metric: string
-  unit: string
-  description: string
-  data: { label: string; value: number; projected: boolean }[]
-} | null
 
 const STATUS_LABEL: Record<Status, string> = {
   loading:   'SCANNING...',
@@ -70,8 +61,6 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState('')
-  const [chartData, setChartData] = useState<ChartData>(null)
-  const [chartLoading, setChartLoading] = useState(true)
   const [forecastId, setForecastId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
@@ -96,8 +85,6 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
     setContent('')
     setStatus('loading')
     setError('')
-    setChartData(null)
-    setChartLoading(true)
     setForecastId(null)
 
     const controller = new AbortController()
@@ -163,32 +150,7 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
       }
     }
 
-    async function runChart(forecastContent: string) {
-      try {
-        const today = new Date().toISOString().split('T')[0]
-        const res = await fetch('/api/chart', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, horizon, forecastContent, today }),
-          signal: controller.signal,
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data?.metric && data?.data?.length) setChartData(data)
-        }
-      } catch {
-        // non-critical
-      } finally {
-        setChartLoading(false)
-      }
-    }
-
-    async function runAll() {
-      const forecastContent = await runForecast()
-      await runChart(forecastContent)
-    }
-
-    runAll()
+    runForecast()
 
     return () => {
       clearTimeout(timeoutId)
@@ -210,22 +172,6 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
 
   return (
     <div className="w-full space-y-4">
-
-      {/* Chart */}
-      {(chartLoading || chartData) && (
-        <div>
-          {chartLoading ? (
-            <div
-              className="border p-4 text-xs tracking-widest"
-              style={{ borderColor: 'var(--green-border)', color: 'var(--amber)' }}
-            >
-              <span className="cursor-blink">◈</span> IDENTIFYING KEY METRIC...
-            </div>
-          ) : (
-            chartData && <ForecastChart data={chartData} />
-          )}
-        </div>
-      )}
 
       {/* Forecast terminal window */}
       <div
