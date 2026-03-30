@@ -102,19 +102,24 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
           signal: controller.signal,
         })
         if (!res.ok) throw new Error(`API error ${res.status}`)
+        if (!res.body) throw new Error('No response body received')
         setStatus('streaming')
 
-        const reader = res.body!.getReader()
+        const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let full = ''
 
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value, { stream: true })
-          full += chunk
-          setContent(full)
-          bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+        try {
+          while (true) {
+            const { value, done } = await reader.read()
+            if (done) break
+            const chunk = decoder.decode(value, { stream: true })
+            full += chunk
+            setContent(full)
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+          }
+        } finally {
+          reader.releaseLock()
         }
 
         setStatus('done')
@@ -127,7 +132,7 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
         })
           .then((r) => r.json())
           .then(({ id }) => { if (id) setForecastId(id) })
-          .catch(() => {})
+          .catch((err) => console.error('Failed to save forecast:', err))
 
         return full
       } catch (err: unknown) {
