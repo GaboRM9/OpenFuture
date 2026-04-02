@@ -90,7 +90,7 @@ export default async function ForecastPage({ params }: Props) {
             className="text-xs tracking-widest uppercase border px-4 py-2 transition-all hover:bg-[var(--green-faint)] shrink-0"
             style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
           >
-            [RUN YOUR OWN]
+            [HOME]
           </Link>
         </div>
       </div>

@@ -81,7 +81,7 @@ export default async function PredictionsPage({
             className="px-4 py-2 text-xs tracking-widest uppercase border transition-all hover:bg-[var(--green-faint)]"
             style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
           >
-            [NEW QUERY]
+            [HOME]
           </Link>
         </div>
 
