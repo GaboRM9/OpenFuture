@@ -17,7 +17,7 @@ function extractFromDeepTable(content: string): ExtractedPrediction[] {
     .slice(2) // skip header and separator rows
 
   return rows.flatMap(row => {
-    const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+    const cells = row.split('|').map(c => c.trim()).slice(1, -1)
     if (cells.length < 2) return []
 
     const [timeframe, prediction, confidenceRaw, keyAssumption] = cells
@@ -49,7 +49,7 @@ function extractFromLightList(content: string): ExtractedPrediction[] {
 
       const confidenceMatch = text.match(/\*?\*?(\d+)%\*?\*?/)
       const confidence = confidenceMatch ? Math.min(100, Math.max(0, parseInt(confidenceMatch[1]))) : null
-      const prediction_text = text.replace(/\*?\*?\d+%\*?\*?:?\s*/g, '').trim()
+      const prediction_text = text.replace(/^\*?\*?\d+%\*?\*?:?\s*/, '').trim()
 
       return [{ prediction_text, confidence, timeframe: null, resolution_criteria: null }]
     })

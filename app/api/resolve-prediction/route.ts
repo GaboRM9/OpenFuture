@@ -15,6 +15,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'invalid status' }, { status: 400 })
   }
 
+  if (notes !== undefined && (typeof notes !== 'string' || notes.length > 2000)) {
+    return Response.json({ error: 'notes must be a string under 2000 characters' }, { status: 400 })
+  }
+
   const update: Record<string, unknown> = { status }
   update.reviewed_at = status !== 'pending' ? new Date().toISOString() : null
   if (notes !== undefined) update.notes = notes
