@@ -13,9 +13,10 @@ export function validateTopic(topic: unknown): string | null {
 }
 
 export function validateHorizon(horizon: unknown): string | null {
-  if (!VALID_HORIZONS.includes(horizon as Horizon)) {
-    return `Horizon must be one of: ${VALID_HORIZONS.join(', ')}`
-  }
+  if (typeof horizon !== 'string') return 'Horizon must be a string'
+  const h = horizon.trim()
+  if (h.length === 0) return 'Horizon is required'
+  if (h.length > 50) return 'Horizon must be 50 characters or fewer'
   return null
 }
 

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { Clock } from 'lucide-react'
 import ForecastForm from '@/components/ForecastForm'
 import ForecastStream from '@/components/ForecastStream'
 
@@ -97,7 +99,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-49px)] flex-col items-center px-4 py-12">
+    <main className="flex min-h-screen flex-col items-center px-4 py-12">
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
 
       {!forecast && (
@@ -108,22 +110,35 @@ export default function Home() {
               <p className="text-xs tracking-widest mb-3" style={{ color: 'var(--green-muted)' }}>
                 ── ORACLE ENGINE // PREDICTIVE ANALYSIS SYSTEM ──
               </p>
-              <button
-                onClick={() => setHelpOpen(true)}
-                className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)] shrink-0 ml-4"
-                style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
-              >
-                [?]
-              </button>
+              <div className="flex items-center gap-2 shrink-0 ml-4">
+                <Link
+                  href="/predictions"
+                  className="flex items-center transition-all hover:opacity-80"
+                  style={{ color: 'var(--green-muted)' }}
+                  title="Prediction Tracker"
+                >
+                  <Clock size={14} />
+                </Link>
+                <button
+                  onClick={() => setHelpOpen(true)}
+                  className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
+                  style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+                >
+                  [?]
+                </button>
+              </div>
             </div>
-            <h1
-              className="text-3xl sm:text-4xl font-bold tracking-widest uppercase glow leading-tight"
-              style={{ color: 'var(--green-bright)' }}
-            >
-              OPEN
-              <span className="cursor-blink" style={{ color: 'var(--green-muted)' }}>_</span>
-              FUTURE
-            </h1>
+            <div className="flex items-baseline gap-3">
+              <h1
+                className="text-3xl sm:text-4xl font-bold tracking-widest uppercase glow leading-tight"
+                style={{ color: 'var(--green-bright)' }}
+              >
+                OPEN
+                <span className="cursor-blink" style={{ color: 'var(--green-muted)' }}>_</span>
+                FUTURE
+              </h1>
+              <span className="text-xs" style={{ color: 'var(--green-faint)' }}>v0.1.1</span>
+            </div>
             <p className="mt-3 text-sm tracking-wide" style={{ color: 'var(--green-muted)' }}>
               REAL-TIME INTELLIGENCE → PROBABILISTIC FORECASTING
             </p>
