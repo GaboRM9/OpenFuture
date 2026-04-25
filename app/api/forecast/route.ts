@@ -12,8 +12,6 @@ import { validateTopic, validateHorizon, validateMode } from '@/lib/validate'
 import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
 const MODEL_RESEARCH  = process.env.MODEL_RESEARCH  ?? 'claude-sonnet-4-6'
 const MODEL_COMPRESS  = process.env.MODEL_COMPRESS  ?? 'claude-haiku-4-5-20251001'
 const MODEL_SYNTHESIS = process.env.MODEL_SYNTHESIS ?? 'claude-opus-4-6'
@@ -116,6 +114,13 @@ function extractResearchText(message: Anthropic.Message): string {
 export async function POST(request: Request) {
   const { allowed, retryAfter } = rateLimit(getIp(request), { limit: 5, windowMs: 60_000 })
   if (!allowed) return rateLimitResponse(retryAfter)
+
+  const userKey = request.headers.get('X-Api-Key')
+  const apiKey = userKey || process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return new Response('No API key configured. Add your Anthropic API key via the [KEY] button.', { status: 401 })
+  }
+  const anthropic = new Anthropic({ apiKey })
 
   const { topic, horizon, mode } = await request.json()
 

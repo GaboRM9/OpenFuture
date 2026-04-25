@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Clock } from 'lucide-react'
+import { /* Clock, */ Settings } from 'lucide-react'
 import ForecastForm from '@/components/ForecastForm'
 import ForecastStream from '@/components/ForecastStream'
+import ApiKeyModal from '@/components/ApiKeyModal'
 
 type ForecastState = { topic: string; horizon: string; mode: 'light' | 'deep' } | null
 
@@ -87,6 +88,13 @@ export default function Home() {
   const [forecast, setForecast] = useState<ForecastState>(null)
   const [loading, setLoading] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [keyModalOpen, setKeyModalOpen] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+
+  useEffect(() => {
+    const stored = localStorage.getItem('openfuture_api_key')
+    if (stored) setApiKey(stored)
+  }, [])
 
   function handleSubmit(topic: string, horizon: string, mode: 'light' | 'deep') {
     setLoading(true)
@@ -101,6 +109,13 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center px-4 py-12">
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+      {keyModalOpen && (
+        <ApiKeyModal
+          currentKey={apiKey}
+          onSave={setApiKey}
+          onClose={() => setKeyModalOpen(false)}
+        />
+      )}
 
       {!forecast && (
         <div className="flex w-full max-w-2xl flex-col gap-10">
@@ -111,6 +126,7 @@ export default function Home() {
                 ── ORACLE ENGINE // PREDICTIVE ANALYSIS SYSTEM ──
               </p>
               <div className="flex items-center gap-2 shrink-0 ml-4">
+                {/* Prediction Tracker — hidden until v2 release
                 <Link
                   href="/predictions"
                   className="flex items-center transition-all hover:opacity-80"
@@ -119,6 +135,18 @@ export default function Home() {
                 >
                   <Clock size={14} />
                 </Link>
+                */}
+                <button
+                  onClick={() => setKeyModalOpen(true)}
+                  className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
+                  style={{
+                    borderColor: apiKey ? 'var(--green)' : 'var(--green-border)',
+                    color: apiKey ? 'var(--green-bright)' : 'var(--green-muted)',
+                  }}
+                  title="API Key Settings"
+                >
+                  <Settings size={14} />
+                </button>
                 <button
                   onClick={() => setHelpOpen(true)}
                   className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
@@ -160,6 +188,7 @@ export default function Home() {
             topic={forecast.topic}
             horizon={forecast.horizon}
             mode={forecast.mode}
+            apiKey={apiKey}
             onReset={handleReset}
           />
         </div>
