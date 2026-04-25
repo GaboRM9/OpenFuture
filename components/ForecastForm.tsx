@@ -80,7 +80,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder={PLACEHOLDERS[placeholderIdx]}
-          className="flex-1 bg-transparent py-4 text-sm outline-none placeholder:opacity-30 min-w-0"
+          className="flex-1 bg-transparent py-4 text-sm outline-none placeholder:text-[var(--green-muted)] min-w-0"
           style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
           disabled={loading}
           autoFocus
@@ -136,7 +136,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
       </div>
 
       {/* Mode hint */}
-      <p className="text-xs" style={{ color: 'var(--green-faint)' }}>
+      <p className="text-xs" style={{ color: 'var(--green-muted)' }}>
         {mode === 'light'
           ? 'LIGHT — 3 searches · concise · fast'
           : 'DEEP — 6-7 searches · base rates · pre-mortem · full analysis'}
@@ -205,7 +205,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
           </div>
         )}
 
-        <p className="mt-2 text-xs" style={{ color: 'var(--green-faint)' }}>
+        <p className="mt-2 text-xs" style={{ color: 'var(--green-muted)' }}>
           SELECTED: {activeHorizon ? activeHorizon.toUpperCase() : '—'}
         </p>
       </div>

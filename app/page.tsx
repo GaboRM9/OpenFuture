@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { /* Clock, */ Settings } from 'lucide-react'
+import { /* Clock, */ Settings, Sun, Moon } from 'lucide-react'
 import ForecastForm from '@/components/ForecastForm'
 import ForecastStream from '@/components/ForecastStream'
 import ApiKeyModal from '@/components/ApiKeyModal'
@@ -76,7 +76,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="border-t pt-3 text-xs" style={{ borderColor: 'var(--green-border)', color: 'var(--green-faint)' }}>
+        <div className="border-t pt-3 text-xs" style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}>
           OPENFUTURE uses live web search + crowd prediction market data to ground every forecast in current evidence.
         </div>
       </div>
@@ -90,11 +90,28 @@ export default function Home() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [keyModalOpen, setKeyModalOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
     const stored = localStorage.getItem('openfuture_api_key')
     if (stored) setApiKey(stored)
+
+    const savedTheme = localStorage.getItem('openfuture_theme') as 'dark' | 'light' | null
+    if (savedTheme) {
+      setTheme(savedTheme)
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      setTheme(prefersDark ? 'dark' : 'light')
+    }
+
   }, [])
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    document.documentElement.dataset.theme = next
+    localStorage.setItem('openfuture_theme', next)
+  }
 
   function handleSubmit(topic: string, horizon: string, mode: 'light' | 'deep') {
     setLoading(true)
@@ -148,6 +165,14 @@ export default function Home() {
                   <Settings size={14} />
                 </button>
                 <button
+                  onClick={toggleTheme}
+                  className="flex items-center border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
+                  style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
+                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                </button>
+                <button
                   onClick={() => setHelpOpen(true)}
                   className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
                   style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
@@ -158,21 +183,21 @@ export default function Home() {
             </div>
             <div className="flex items-baseline gap-3">
               <h1
-                className="text-3xl sm:text-4xl font-bold tracking-widest uppercase glow leading-tight"
+                className="text-3xl sm:text-4xl font-black tracking-widest uppercase leading-tight"
                 style={{ color: 'var(--green-bright)' }}
               >
                 OPEN
-                <span className="cursor-blink" style={{ color: 'var(--green-muted)' }}>_</span>
+                <span style={{ color: 'var(--green-muted)', fontWeight: 700 }}>_</span>
                 FUTURE
               </h1>
-              <span className="text-xs" style={{ color: 'var(--green-faint)' }}>v0.1.1</span>
+              <span className="text-xs" style={{ color: 'var(--green-muted)' }}>v0.1.3</span>
             </div>
             <p className="mt-3 text-sm tracking-wide" style={{ color: 'var(--green-muted)' }}>
               REAL-TIME INTELLIGENCE → PROBABILISTIC FORECASTING
             </p>
             <div
               className="mt-4 border-t pt-4 text-xs tracking-wider"
-              style={{ borderColor: 'var(--green-border)', color: 'var(--green-faint)' }}
+              style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
             >
               INPUT QUERY · SELECT HORIZON · RECEIVE ANALYSIS
             </div>

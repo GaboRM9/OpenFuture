@@ -116,7 +116,7 @@ export default function ApiKeyModal({ currentKey, onSave, onClose }: Props) {
           </div>
         </div>
 
-        <div className="border-t pt-3 space-y-2 text-xs" style={{ borderColor: 'var(--green-border)', color: 'var(--green-faint)' }}>
+        <div className="border-t pt-3 space-y-2 text-xs" style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}>
           <p>
             Your key is stored only in this browser and never logged server-side.
             It is only sent to Anthropic when running a forecast.

@@ -29,7 +29,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistMono.variable} h-full`}>
+    <html lang="en" className={`${geistMono.variable} h-full`} suppressHydrationWarning>
+      <head>
+        {/* Set theme before first paint to avoid flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('openfuture_theme');if(t)document.documentElement.dataset.theme=t;})();` }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <a
           href="#main-content"
