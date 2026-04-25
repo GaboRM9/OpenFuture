@@ -14,8 +14,9 @@
   --red:          #ff4444;
 }
 
+/* System preference — only applies when user hasn't set an explicit choice */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     --bg:           #f5f5f5;
     --bg-panel:     #ebebeb;
     --bg-hover:     #e0e0e0;
@@ -28,6 +29,21 @@
     --amber:        #b87800;
     --red:          #cc2222;
   }
+}
+
+/* Explicit light mode override */
+[data-theme="light"] {
+  --bg:           #f5f5f5;
+  --bg-panel:     #ebebeb;
+  --bg-hover:     #e0e0e0;
+  --green:        #141414;
+  --green-bright: #000000;
+  --green-dim:    #3a3a3a;
+  --green-muted:  #888888;
+  --green-faint:  #d4d4d4;
+  --green-border: #cccccc;
+  --amber:        #b87800;
+  --red:          #cc2222;
 }
 
 @theme inline {
@@ -67,7 +83,7 @@ body::after {
 }
 
 @media (prefers-color-scheme: light) {
-  body::after {
+  :root:not([data-theme="dark"]) body::after {
     background: repeating-linear-gradient(
       0deg,
       transparent,
@@ -76,6 +92,16 @@ body::after {
       rgba(0, 0, 0, 0.025) 4px
     );
   }
+}
+
+:root[data-theme="light"] body::after {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.025) 2px,
+    rgba(0, 0, 0, 0.025) 4px
+  );
 }
 
 /* Custom scrollbar */

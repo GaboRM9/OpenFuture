@@ -354,7 +354,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
             className="flex items-center justify-between px-4 py-2 border-t text-xs tracking-widest"
             style={{ borderColor: 'var(--green-border)' }}
           >
-            <span style={{ color: 'var(--green-faint)' }}>
+            <span style={{ color: 'var(--green-muted)' }}>
               ◈ LOGGED TO HISTORY
             </span>
             <div className="flex items-center gap-2">

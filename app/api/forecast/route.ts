@@ -14,7 +14,7 @@ import { logger } from '@/lib/logger'
 
 const MODEL_RESEARCH  = process.env.MODEL_RESEARCH  ?? 'claude-sonnet-4-6'
 const MODEL_COMPRESS  = process.env.MODEL_COMPRESS  ?? 'claude-haiku-4-5-20251001'
-const MODEL_SYNTHESIS = process.env.MODEL_SYNTHESIS ?? 'claude-opus-4-6'
+const MODEL_SYNTHESIS = process.env.MODEL_SYNTHESIS ?? 'claude-opus-4-7'
 const MODEL_LIGHT     = process.env.MODEL_LIGHT     ?? 'claude-haiku-4-5-20251001'
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
