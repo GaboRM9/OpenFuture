@@ -8,6 +8,7 @@ type Props = {
   topic: string
   horizon: string
   mode: 'light' | 'deep'
+  apiKey?: string
   onReset: () => void
 }
 
@@ -57,7 +58,7 @@ function stripBottomLine(content: string): string {
   return content.replace(/\n?##\s*Bottom Line\s*\n[\s\S]*?(?=\n##|$)/, '')
 }
 
-export default function ForecastStream({ topic, horizon, mode, onReset }: Props) {
+export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }: Props) {
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState('')
@@ -104,7 +105,10 @@ export default function ForecastStream({ topic, horizon, mode, onReset }: Props)
       try {
         const res = await fetch('/api/forecast', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(apiKey ? { 'X-Api-Key': apiKey } : {}),
+          },
           body: JSON.stringify({ topic, horizon, mode }),
           signal: controller.signal,
         })
