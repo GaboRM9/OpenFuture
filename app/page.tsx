@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { /* Clock, */ Settings, Sun, Moon } from 'lucide-react'
+import { /* Clock, */ Settings, Sun, Moon, Github, HelpCircle } from 'lucide-react'
 import ForecastForm from '@/components/ForecastForm'
 import ForecastStream from '@/components/ForecastStream'
 import ApiKeyModal from '@/components/ApiKeyModal'
@@ -21,11 +21,10 @@ function HelpModal({ onClose }: { onClose: () => void }) {
       aria-label="How to use OpenFuture"
     >
       <div
-        className="w-full max-w-lg border p-6 space-y-5"
+        className="w-full max-w-lg border p-4 sm:p-6 space-y-5"
         style={{ background: 'var(--bg)', borderColor: 'var(--green-border)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Title */}
         <div className="flex items-center justify-between">
           <span className="text-xs tracking-widest uppercase glow-sm" style={{ color: 'var(--green-bright)' }}>
             HOW TO USE OPENFUTURE
@@ -41,7 +40,6 @@ function HelpModal({ onClose }: { onClose: () => void }) {
 
         <div className="border-t" style={{ borderColor: 'var(--green-border)' }} />
 
-        {/* Steps */}
         <div className="space-y-4 text-xs leading-relaxed" style={{ color: 'var(--green-muted)' }}>
           <div className="flex gap-3">
             <span style={{ color: 'var(--green-bright)' }}>01</span>
@@ -91,6 +89,8 @@ export default function Home() {
   const [keyModalOpen, setKeyModalOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('openfuture_api_key')
@@ -103,8 +103,17 @@ export default function Home() {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       setTheme(prefersDark ? 'dark' : 'light')
     }
-
   }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false)
+      }
+    }
+    if (settingsOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [settingsOpen])
 
   function toggleTheme() {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -124,7 +133,7 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center px-4 py-12">
+    <main className="h-[100dvh] flex flex-col px-6 sm:px-12">
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
       {keyModalOpen && (
         <ApiKeyModal
@@ -135,80 +144,98 @@ export default function Home() {
       )}
 
       {!forecast && (
-        <div className="flex w-full max-w-2xl flex-col gap-10">
+        <div className="flex flex-col flex-1 w-full">
           {/* Header */}
-          <div>
-            <div className="flex items-start justify-between">
-              <p className="text-xs tracking-widest mb-3" style={{ color: 'var(--green-muted)' }}>
+          <div className="pt-6 sm:pt-10">
+            <div className="flex items-start justify-end sm:justify-between">
+              <p className="hidden sm:block text-base tracking-widest mb-3" style={{ color: 'var(--green-muted)' }}>
                 ── ORACLE ENGINE // PREDICTIVE ANALYSIS SYSTEM ──
               </p>
-              <div className="flex items-center gap-2 shrink-0 ml-4">
-                {/* Prediction Tracker — hidden until v2 release
-                <Link
-                  href="/predictions"
-                  className="flex items-center transition-all hover:opacity-80"
-                  style={{ color: 'var(--green-muted)' }}
-                  title="Prediction Tracker"
-                >
-                  <Clock size={14} />
-                </Link>
-                */}
+              <div className="shrink-0 relative" ref={settingsRef}>
                 <button
-                  onClick={() => setKeyModalOpen(true)}
-                  className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
+                  onClick={() => setSettingsOpen((o) => !o)}
+                  className="flex items-center border p-1.5 transition-all hover:bg-[var(--green-faint)]"
                   style={{
-                    borderColor: apiKey ? 'var(--green)' : 'var(--green-border)',
-                    color: apiKey ? 'var(--green-bright)' : 'var(--green-muted)',
+                    borderColor: settingsOpen ? 'var(--green)' : 'var(--green-border)',
+                    color: settingsOpen ? 'var(--green-bright)' : 'var(--green-muted)',
                   }}
-                  title="API Key Settings"
+                  title="Settings"
                 >
-                  <Settings size={14} />
+                  <Settings size={16} />
                 </button>
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
-                  style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
-                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-                </button>
-                <button
-                  onClick={() => setHelpOpen(true)}
-                  className="text-xs tracking-widest border px-2 py-0.5 transition-all hover:bg-[var(--green-faint)]"
-                  style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
-                >
-                  [?]
-                </button>
+
+                {settingsOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-1 z-40 min-w-[180px] border py-1"
+                    style={{ background: 'var(--bg)', borderColor: 'var(--green-border)' }}
+                  >
+                    <button
+                      onClick={() => { setKeyModalOpen(true); setSettingsOpen(false) }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                      style={{ color: apiKey ? 'var(--green-bright)' : 'var(--green-muted)' }}
+                    >
+                      <Settings size={13} />
+                      API KEY{apiKey && ' ✓'}
+                    </button>
+                    <button
+                      onClick={() => { toggleTheme(); setSettingsOpen(false) }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                      style={{ color: 'var(--green-muted)' }}
+                    >
+                      {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+                      {theme === 'dark' ? 'LIGHT MODE' : 'DARK MODE'}
+                    </button>
+                    <button
+                      onClick={() => { setHelpOpen(true); setSettingsOpen(false) }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                      style={{ color: 'var(--green-muted)' }}
+                    >
+                      <HelpCircle size={13} />
+                      HELP
+                    </button>
+                    <div className="my-1 border-t" style={{ borderColor: 'var(--green-border)' }} />
+                    <a
+                      href="https://github.com/GaboRM9/OpenFuture"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setSettingsOpen(false)}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                      style={{ color: 'var(--green-muted)' }}
+                    >
+                      <Github size={13} />
+                      GITHUB
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-center gap-3">
               <h1
-                className="text-3xl sm:text-4xl font-black tracking-widest uppercase leading-tight"
+                className="text-[32px] sm:text-[69px] font-black tracking-widest uppercase leading-tight"
                 style={{ color: 'var(--green-bright)' }}
               >
                 OPEN
                 <span style={{ color: 'var(--green-muted)', fontWeight: 700 }}>_</span>
                 FUTURE
               </h1>
-              <span className="text-xs" style={{ color: 'var(--green-muted)' }}>v0.1.3</span>
+              <span className="text-xs sm:text-base" style={{ color: 'var(--green-muted)' }}>v0.1.3</span>
             </div>
-            <p className="mt-3 text-sm tracking-wide" style={{ color: 'var(--green-muted)' }}>
+            <p className="mt-2 sm:mt-3 text-xs sm:text-lg tracking-wide" style={{ color: 'var(--green-muted)' }}>
               REAL-TIME INTELLIGENCE → PROBABILISTIC FORECASTING
             </p>
-            <div
-              className="mt-4 border-t pt-4 text-xs tracking-wider"
-              style={{ borderColor: 'var(--green-border)', color: 'var(--green-muted)' }}
-            >
-              INPUT QUERY · SELECT HORIZON · RECEIVE ANALYSIS
-            </div>
+            <div className="mt-3 sm:mt-4 border-t" style={{ borderColor: 'var(--green-border)' }} />
           </div>
 
-          <ForecastForm onSubmit={handleSubmit} loading={loading} />
+          <div className="flex-1 flex items-center w-full">
+            <div className="w-full max-w-[806px] mx-auto">
+              <ForecastForm onSubmit={handleSubmit} loading={loading} />
+            </div>
+          </div>
         </div>
       )}
 
       {forecast && (
-        <div className="w-full max-w-4xl">
+        <div className="flex flex-col flex-1 w-full pt-6 sm:pt-10 pb-6">
           <ForecastStream
             topic={forecast.topic}
             horizon={forecast.horizon}

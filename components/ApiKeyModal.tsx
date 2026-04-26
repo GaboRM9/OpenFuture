@@ -41,7 +41,7 @@ export default function ApiKeyModal({ currentKey, onSave, onClose }: Props) {
       aria-label="API Key Settings"
     >
       <div
-        className="w-full max-w-lg border p-6 space-y-5"
+        className="w-full max-w-lg border p-4 sm:p-6 space-y-5"
         style={{ background: 'var(--bg)', borderColor: 'var(--green-border)' }}
         onClick={(e) => e.stopPropagation()}
       >

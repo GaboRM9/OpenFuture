@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist_Mono } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 
 const geistMono = Geist_Mono({
@@ -30,11 +31,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geistMono.variable} h-full`} suppressHydrationWarning>
-      <head>
-        {/* Set theme before first paint to avoid flash */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('openfuture_theme');if(t)document.documentElement.dataset.theme=t;})();` }} />
-      </head>
       <body className="flex min-h-full flex-col">
+        {/* Set theme before first paint to avoid flash */}
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('openfuture_theme');if(t)document.documentElement.dataset.theme=t;})();` }}
+        />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-1 focus:text-xs focus:tracking-widest focus:uppercase"

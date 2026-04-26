@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const PLACEHOLDERS = [
   'will remote work survive the next 2 years?',
@@ -43,6 +43,8 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   const [custom, setCustom] = useState('')
   const [mode, setMode] = useState<Mode>('light')
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
+  const [modeMenuOpen, setModeMenuOpen] = useState(false)
+  const modeMenuRef = useRef<HTMLDivElement>(null)
 
   const isCustom = horizon === '__custom__'
   const activeHorizon = isCustom ? custom.trim() : horizon
@@ -54,6 +56,16 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
     return () => clearInterval(id)
   }, [])
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (modeMenuRef.current && !modeMenuRef.current.contains(e.target as Node)) {
+        setModeMenuOpen(false)
+      }
+    }
+    if (modeMenuOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [modeMenuOpen])
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!topic.trim() || !activeHorizon) return
@@ -61,7 +73,12 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-4" aria-label="Forecast query form">
+    <form onSubmit={handleSubmit} className="w-full" aria-label="Forecast query form">
+      <div className="space-y-3 sm:space-y-4">
+
+      <p className="text-sm tracking-wider" style={{ color: 'var(--green-muted)' }}>
+        INPUT QUERY · SELECT HORIZON · RECEIVE ANALYSIS
+      </p>
 
       {/* Topic + mode + submit — single row */}
       <div
@@ -69,7 +86,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
         style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
       >
         <span
-          className="flex items-center px-3 text-sm select-none glow-sm shrink-0"
+          className="hidden sm:flex items-center px-3 text-sm select-none glow-sm shrink-0"
           style={{ color: 'var(--green-muted)' }}
         >
           &gt;_
@@ -80,7 +97,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder={PLACEHOLDERS[placeholderIdx]}
-          className="flex-1 bg-transparent py-4 text-sm outline-none placeholder:text-[var(--green-muted)] min-w-0"
+          className="flex-1 bg-transparent py-4 sm:py-6 text-sm outline-none placeholder:text-[var(--green-muted)] min-w-0"
           style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
           disabled={loading}
           autoFocus
@@ -94,25 +111,51 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
         <div
           className="flex items-center shrink-0 border-l"
           style={{ borderColor: 'var(--green-border)' }}
+          ref={modeMenuRef}
         >
           <div className="relative flex items-center">
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as Mode)}
+            <button
+              type="button"
+              onClick={() => setModeMenuOpen((o) => !o)}
               disabled={loading}
-              className="appearance-none bg-transparent px-3 py-4 text-xs tracking-widest uppercase outline-none cursor-pointer pr-6"
+              className="relative flex items-center justify-center px-5 py-4 sm:py-6 text-xs tracking-widest uppercase cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 min-w-[80px]"
               style={{ color: 'var(--green-muted)' }}
               aria-label="Forecast mode"
             >
-              <option value="light" style={{ background: '#0a0f0a', color: '#6abf6a' }}>LIGHT</option>
-              <option value="deep" style={{ background: '#0a0f0a', color: '#6abf6a' }}>DEEP</option>
-            </select>
-            <span
-              className="pointer-events-none absolute right-2 text-xs"
-              style={{ color: 'var(--green-muted)' }}
-            >
-              ▾
-            </span>
+              {mode.toUpperCase()}
+              <span className="absolute right-2 text-xs" style={{ color: 'var(--green-muted)' }}>▾</span>
+            </button>
+
+            {modeMenuOpen && (
+              <div
+                className="absolute right-0 bottom-full mb-1 z-40 min-w-[150px] border py-1"
+                style={{ background: 'var(--bg)', borderColor: 'var(--green-border)' }}
+              >
+                {(['light', 'deep'] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => { setMode(m); setModeMenuOpen(false) }}
+                    className="flex w-full items-center px-4 py-2 text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                    style={{ color: mode === m ? 'var(--green-bright)' : 'var(--green-muted)' }}
+                  >
+                    {mode === m && <span className="mr-2">▶</span>}
+                    {m.toUpperCase()}
+                  </button>
+                ))}
+                <div className="my-1 border-t" style={{ borderColor: 'var(--green-border)' }} />
+                {[['TAROT', '🔮'], ['STOCK', '📈']].map(([label, icon]) => (
+                  <div
+                    key={label}
+                    className="flex w-full items-center justify-between px-4 py-2 text-xs tracking-widest uppercase cursor-not-allowed opacity-35"
+                    style={{ color: 'var(--green-muted)' }}
+                  >
+                    <span>{icon} {label}</span>
+                    <span className="text-[10px] ml-3" style={{ color: 'var(--amber)' }}>SOON</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -157,7 +200,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
               type="button"
               onClick={() => setHorizon(value)}
               disabled={loading}
-              className="px-4 py-1.5 text-xs tracking-widest uppercase border transition-all"
+              className="px-3 py-2 sm:px-5 sm:py-2.5 text-xs tracking-widest uppercase border transition-all"
               style={
                 horizon === value
                   ? { background: 'var(--green-faint)', borderColor: 'var(--green)', color: 'var(--green-bright)' }
@@ -171,7 +214,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
             type="button"
             onClick={() => setHorizon('__custom__')}
             disabled={loading}
-            className="px-4 py-1.5 text-xs tracking-widest uppercase border transition-all"
+            className="px-3 py-2 sm:px-5 sm:py-2.5 text-xs tracking-widest uppercase border transition-all"
             style={
               isCustom
                 ? { background: 'var(--green-faint)', borderColor: 'var(--green)', color: 'var(--green-bright)' }
@@ -210,6 +253,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
         </p>
       </div>
 
+      </div>
     </form>
   )
 }

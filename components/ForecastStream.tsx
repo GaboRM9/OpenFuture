@@ -175,11 +175,11 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
   const bottomLine = status === 'done' ? extractBottomLine(content) : null
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full flex flex-col flex-1 space-y-4">
 
       {/* Forecast terminal window */}
       <div
-        className="border"
+        className="border flex flex-col flex-1"
         style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
       >
         {/* Title bar */}
@@ -214,7 +214,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span
-              className="text-xs tracking-widest uppercase"
+              className="text-xs tracking-widest uppercase truncate min-w-0"
               style={{ color: STATUS_COLOR[status] }}
               role="status"
               aria-live="polite"
@@ -238,7 +238,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
         </div>
 
         {/* Output */}
-        <div className="p-6 min-h-64 max-h-[75vh] overflow-y-auto">
+        <div className="p-3 sm:p-6 flex-1 overflow-y-auto min-h-0">
 
           {status === 'loading' && (
             <div className="space-y-3">
@@ -351,7 +351,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
         {/* Footer */}
         {status === 'done' && (
           <div
-            className="flex items-center justify-between px-4 py-2 border-t text-xs tracking-widest"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 px-4 py-2 border-t text-xs tracking-widest"
             style={{ borderColor: 'var(--green-border)' }}
           >
             <span style={{ color: 'var(--green-muted)' }}>
@@ -370,7 +370,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
                   {copied ? '✓ COPIED' : '[SHARE]'}
                 </button>
               )}
-              <span style={{ color: 'var(--green-muted)' }}>
+              <span className="hidden sm:inline" style={{ color: 'var(--green-muted)' }}>
                 {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
               </span>
             </div>
