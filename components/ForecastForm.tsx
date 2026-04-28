@@ -21,6 +21,25 @@ const PLACEHOLDERS = [
   'the gig economy in 5 years',
 ]
 
+const MOBILE_PLACEHOLDERS = [
+  'will remote work last?',
+  'housing prices?',
+  'when does AGI arrive?',
+  'will cash disappear?',
+  'humanoid robots at work?',
+  'future of college?',
+  'EVs vs gas cars?',
+  'lab-grown meat?',
+  'AI vs white-collar jobs?',
+  '4-day work week?',
+  'cable TV vs streaming?',
+  'commercial space travel?',
+  'living to 150?',
+  'Gen Z & social media?',
+  'nuclear fusion soon?',
+  'gig economy in 5y?',
+]
+
 const HORIZONS = [
   { label: '1W',  value: '1 week' },
   { label: '1M',  value: '1 month' },
@@ -43,11 +62,20 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
   const [custom, setCustom] = useState('')
   const [mode, setMode] = useState<Mode>('light')
   const [placeholderIdx, setPlaceholderIdx] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
   const [modeMenuOpen, setModeMenuOpen] = useState(false)
   const modeMenuRef = useRef<HTMLDivElement>(null)
 
   const isCustom = horizon === '__custom__'
   const activeHorizon = isCustom ? custom.trim() : horizon
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -76,7 +104,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
     <form onSubmit={handleSubmit} className="w-full" aria-label="Forecast query form">
       <div className="space-y-3 sm:space-y-4">
 
-      <p className="text-sm tracking-wider" style={{ color: 'var(--green-muted)' }}>
+      <p className="text-[clamp(10px,3.4vw,14px)] sm:text-sm tracking-tight sm:tracking-wider whitespace-nowrap" style={{ color: 'var(--green-muted)' }}>
         INPUT QUERY · SELECT HORIZON · RECEIVE ANALYSIS
       </p>
 
@@ -86,7 +114,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
         style={{ borderColor: 'var(--green-border)', background: 'var(--bg-panel)' }}
       >
         <span
-          className="hidden sm:flex items-center px-3 text-sm select-none glow-sm shrink-0"
+          className="flex items-center px-2 sm:px-3 text-sm select-none glow-sm shrink-0"
           style={{ color: 'var(--green-muted)' }}
         >
           &gt;_
@@ -96,7 +124,7 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
           type="text"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder={PLACEHOLDERS[placeholderIdx]}
+          placeholder={(isMobile ? MOBILE_PLACEHOLDERS : PLACEHOLDERS)[placeholderIdx]}
           className="flex-1 bg-transparent py-4 sm:py-6 text-sm outline-none placeholder:text-[var(--green-muted)] min-w-0"
           style={{ color: 'var(--green)', caretColor: 'var(--green-bright)' }}
           disabled={loading}
@@ -118,12 +146,12 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
               type="button"
               onClick={() => setModeMenuOpen((o) => !o)}
               disabled={loading}
-              className="relative flex items-center justify-center px-5 py-4 sm:py-6 text-xs tracking-widest uppercase cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 min-w-[80px]"
+              className="flex items-center justify-center px-2.5 sm:px-5 py-4 sm:py-6 text-[10px] sm:text-xs tracking-widest uppercase cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 min-w-0 sm:min-w-[80px]"
               style={{ color: 'var(--green-muted)' }}
               aria-label="Forecast mode"
             >
               {mode.toUpperCase()}
-              <span className="absolute right-2 text-xs" style={{ color: 'var(--green-muted)' }}>▾</span>
+              <span className="ml-1 text-xs" style={{ color: 'var(--green-muted)' }}>▾</span>
             </button>
 
             {modeMenuOpen && (
@@ -163,17 +191,16 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
         <button
           type="submit"
           disabled={loading || !topic.trim() || !activeHorizon}
-          className="flex items-center gap-2 px-5 text-xs tracking-widest uppercase font-bold border-l transition-all disabled:cursor-not-allowed disabled:opacity-30 shrink-0"
-          style={{
-            borderColor: 'var(--green-border)',
-            background: topic.trim() && !loading ? 'var(--green-faint)' : 'transparent',
-            color: 'var(--green-bright)',
-          }}
+          className="flex items-center gap-2 px-3 sm:px-5 text-xs tracking-widest uppercase font-bold border-l transition-all shrink-0 bg-[var(--green-faint)] text-[var(--green-bright)] enabled:hover:bg-[var(--green)] enabled:hover:text-[var(--bg)] disabled:bg-transparent disabled:cursor-not-allowed disabled:opacity-30"
+          style={{ borderColor: 'var(--green-border)' }}
         >
           {loading ? (
             <span className="cursor-blink">▋</span>
           ) : (
-            '▶'
+            <>
+              <span>▶</span>
+              <span className="hidden sm:inline">[RUN]</span>
+            </>
           )}
         </button>
       </div>
