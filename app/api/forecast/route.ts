@@ -7,6 +7,7 @@ import {
   buildForecastPrompt,
   buildResearchPrompt,
   buildSynthesisPrompt,
+  getPreMortemFrame,
 } from '@/lib/oracle-prompt'
 import { validateTopic, validateHorizon, validateMode } from '@/lib/validate'
 import { rateLimit, getIp, rateLimitResponse } from '@/lib/rate-limit'
@@ -190,7 +191,7 @@ export async function POST(request: Request) {
           messageStream = anthropic.messages.stream({
             model: MODEL_SYNTHESIS,
             max_tokens: 8000,
-            system: DEEP_SYNTHESIS_PROMPT,
+            system: DEEP_SYNTHESIS_PROMPT.replace('{{PRE_MORTEM_FRAME}}', getPreMortemFrame(horizon)),
             messages: [{
               role: 'user',
               content: buildSynthesisPrompt(topic, horizon, today, researchData, marketContext),

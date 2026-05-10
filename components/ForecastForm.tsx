@@ -224,8 +224,8 @@ export default function ForecastForm({ onSubmit, loading }: Props) {
         {/* Mode hint */}
         <p className="text-xs" style={{ color: 'var(--green-muted)' }}>
           {mode === 'light'
-            ? 'LIGHT — 3 searches · concise · fast'
-            : 'DEEP — 6-7 searches · base rates · pre-mortem · full analysis'}
+            ? 'LIGHT — 3 searches · concise · fast (10s)'
+            : 'DEEP — 6-7 searches · base rates · pre-mortem · full analysis (3–5 min)'}
         </p>
 
       </div>

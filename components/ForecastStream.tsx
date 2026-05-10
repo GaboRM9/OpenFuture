@@ -65,6 +65,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
   const [error, setError] = useState('')
   const [forecastId, setForecastId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [contentCopied, setContentCopied] = useState(false)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [retryKey, setRetryKey] = useState(0)
   const abortRef = useRef<AbortController | null>(null)
@@ -170,6 +171,13 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(content).then(() => {
+      setContentCopied(true)
+      setTimeout(() => setContentCopied(false), 2000)
     })
   }
 
@@ -362,6 +370,16 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
               ◈ LOGGED TO HISTORY
             </span>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopy}
+                className="px-3 py-1 border text-xs tracking-widest uppercase transition-all hover:bg-[var(--green-faint)]"
+                style={{
+                  borderColor: contentCopied ? 'var(--green-dim)' : 'var(--green-border)',
+                  color: contentCopied ? 'var(--green-bright)' : 'var(--green-muted)',
+                }}
+              >
+                {contentCopied ? '✓ COPIED' : '[COPY]'}
+              </button>
               {forecastId && (
                 <button
                   onClick={handleShare}
@@ -371,7 +389,7 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
                     color: copied ? 'var(--green-bright)' : 'var(--green-muted)',
                   }}
                 >
-                  {copied ? '✓ COPIED' : '[SHARE]'}
+                  {copied ? '✓ LINK COPIED' : '[SHARE]'}
                 </button>
               )}
               <span className="hidden sm:inline" style={{ color: 'var(--green-muted)' }}>

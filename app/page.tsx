@@ -59,8 +59,8 @@ function HelpModal({ onClose }: { onClose: () => void }) {
             <div>
               <p style={{ color: 'var(--green)' }}>CHOOSE A MODE</p>
               <p className="mt-0.5">
-                <span style={{ color: 'var(--green)' }}>LIGHT</span> — fast, 3 searches, concise predictions with confidence %.<br />
-                <span style={{ color: 'var(--green)' }}>DEEP</span> — rigorous, 10+ searches, base rate analysis, scenario table, wild cards, and pre-mortem. Uses real-money prediction market data as priors.
+                <span style={{ color: 'var(--green)' }}>LIGHT</span> — 3 searches · concise · fast (10s)<br />
+                <span style={{ color: 'var(--green)' }}>DEEP</span> — 10+ searches · base rates · scenario table · wild cards · pre-mortem · prediction market priors (3–5 min)
               </p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function Home() {
                 <span style={{ color: 'var(--green-muted)', fontWeight: 700 }}>_</span>
                 FUTURE
               </h1>
-              <span className="text-[10px] sm:text-base" style={{ color: 'var(--green-muted)' }}>v0.1.3</span>
+              <span className="text-[10px] sm:text-base" style={{ color: 'var(--green-muted)' }}>v0.1.4</span>
               <div className="ml-auto sm:hidden">
                 <SettingsMenu
                   apiKey={apiKey}
