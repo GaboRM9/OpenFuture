@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import ForecastTimeline from './ForecastTimeline'
 
 type Props = {
   topic: string
@@ -341,6 +342,9 @@ export default function ForecastStream({ topic, horizon, mode, apiKey, onReset }
                     {bottomLine}
                   </p>
                 </div>
+              )}
+              {status === 'done' && (
+                <ForecastTimeline horizon={horizon} content={content} />
               )}
             </div>
           )}
