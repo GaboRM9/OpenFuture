@@ -45,7 +45,7 @@ Present 3 scenarios (Optimistic / Base Case / Pessimistic). Each must include:
 3-4 low-probability, high-impact events that could dramatically alter the trajectory.
 
 ## Pre-Mortem
-Assume the base case was wrong 12 months from now. What most likely caused it to fail? This surfaces hidden assumptions.
+Assume the base case was wrong {{PRE_MORTEM_FRAME}}. What most likely caused it to fail? This surfaces hidden assumptions.
 
 ## Bottom Line
 2-3 sentences synthesizing the most likely outcome, what would invalidate it, and the single most important variable to watch.
@@ -56,26 +56,69 @@ Guidelines:
 - Every claim must be grounded in your research
 - Be specific and quantitative — no vague language`
 
-function getHorizonFraming(horizon: string): string {
-  const h = horizon.toLowerCase()
-  const isShort = /\b(\d+)\s*(day|week|month)/.test(h) && !/(1[2-9]|[2-9]\d)\s*month|\byear\b|\bdecade\b/.test(h)
-  const isLong = /\byear\b|\bdecade\b|\b(1[2-9]|[2-9]\d)\s*month/.test(h)
+// ─── Horizon helpers ──────────────────────────────────────────────────────────
 
-  if (isShort) {
+function parseHorizonYears(horizon: string): number {
+  const m = horizon.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(day|week|month|year|decade)/i)
+  if (!m) return 1
+  const n = parseFloat(m[1])
+  const u = m[2][0].toLowerCase()
+  if (u === 'd') return n / 365
+  if (u === 'w') return n / 52
+  if (u === 'm') return n / 12
+  if (u === 'y') return n
+  return n * 10 // decade
+}
+
+export function getPreMortemFrame(horizon: string): string {
+  const years = parseHorizonYears(horizon)
+  if (years >= 200) return 'one century from now'
+  if (years >= 50)  return 'one generation (25 years) from now'
+  if (years >= 10)  return 'three years from now'
+  if (years >= 2)   return 'one year from now'
+  return '3 months from now'
+}
+
+function getHorizonFraming(horizon: string, today: string): string {
+  const years = parseHorizonYears(horizon)
+
+  if (years < 1) {
     return `HORIZON STRATEGY — Short-term (${horizon}): Near-term momentum and current signals dominate. Focus on specific upcoming events, catalysts, and existing trajectories. Structural trends matter less than what is happening right now.`
   }
-  if (isLong) {
+
+  if (years >= 50) {
+    const todayYear = new Date(today).getFullYear()
+    const milestones = [0.25, 0.5, 0.75, 1.0].map(f => {
+      const yr = Math.round(todayYear + years * f)
+      const span = Math.round(years * f)
+      return `~${span} years out (year ${yr})`
+    })
+    return `HORIZON STRATEGY — Epoch-scale (${horizon}): Think in civilizational epochs, not decades. Near-term events (< 50 years) are irrelevant noise at this scale. Focus on: multi-century demographic transitions, technological paradigm shifts, geopolitical realignments, climate epoch changes, and historical base rates over comparable timescales (draw on analogies like the Roman Empire, the Industrial Revolution, or the Black Death).
+
+CRITICAL — PREDICTION MILESTONE REQUIREMENT: Your Key Predictions (or Predictions Table rows) MUST be anchored to these four time windows, in order — one prediction per window:
+  1. ${milestones[0]}
+  2. ${milestones[1]}
+  3. ${milestones[2]}
+  4. ${milestones[3]}
+
+Do NOT cluster predictions in the first 10–50 years. Each prediction must describe conditions or outcomes at its milestone window, not the present day.`
+  }
+
+  if (years >= 5) {
     return `HORIZON STRATEGY — Long-term (${horizon}): Structural trends, base rates, and fundamental drivers dominate over near-term noise. Emphasize technology curves, demographic shifts, policy trajectories, and historical analogues. Short-term volatility is largely irrelevant.`
   }
+
   return `HORIZON STRATEGY — Medium-term (${horizon}): Balance near-term momentum with structural trends. Identify the 1-2 inflection points most likely to determine the outcome within this window.`
 }
+
+// ─── Build functions ──────────────────────────────────────────────────────────
 
 export function buildForecastPrompt(topic: string, horizon: string, today: string): string {
   return `Today's date: ${today}
 Research and generate a forecast for: "${topic}"
 Time Horizon: ${horizon} (starting from ${today})
 
-${getHorizonFraming(horizon)}
+${getHorizonFraming(horizon, today)}
 
 Search the web first using ${today} as your reference point for what is current. All predictions should be dated relative to ${today}.`
 }
@@ -142,7 +185,7 @@ Present 3 scenarios (Optimistic / Base Case / Pessimistic). Each must include:
 Make the strongest possible case that your base case is wrong. What would a well-informed skeptic say? What evidence might you be underweighting? This is not a list of risks — it is the best single argument against your conclusion.
 
 ## Pre-Mortem
-Assume the base case was wrong 12 months from now. What single failure most likely caused it?
+Assume the base case was wrong {{PRE_MORTEM_FRAME}}. What single failure most likely caused it?
 
 ## Bottom Line
 State the most likely outcome. Then write one sentence in this exact form: "If [the single most important variable] moves from [current value] to [threshold value], base case probability shifts from ~X% to ~Y%." Then state what would invalidate the forecast entirely.
@@ -160,7 +203,7 @@ export function buildResearchPrompt(topic: string, horizon: string, today: strin
 Research topic: "${topic}"
 Time Horizon: ${horizon} (starting from ${today})
 
-${getHorizonFraming(horizon)}
+${getHorizonFraming(horizon, today)}
 ${marketContext ? `\nPREDICTION MARKET CONTEXT (use this to guide your searches — find evidence that explains or challenges these crowd probabilities):\n${marketContext}\n` : ''}
 Run all web searches using ${today} as your reference for what is current, then output your findings as a raw JSON object.`
 }
@@ -176,7 +219,7 @@ export function buildSynthesisPrompt(
 Topic: "${topic}"
 Time Horizon: ${horizon} (starting from ${today})
 
-${getHorizonFraming(horizon)}
+${getHorizonFraming(horizon, today)}
 
 RESEARCH DATA (gathered from web searches):
 ${researchData}

@@ -1,4 +1,4 @@
-# OPEN_FUTURE `v0.1.3`
+# OPEN_FUTURE `v0.1.4`
 
 > *The present is already the past by the time you read it.*
 
@@ -12,7 +12,9 @@ OpenFuture feeds a topic into an AI that browses the live web, synthesizes what 
 
 You give it a topic and a time horizon. It searches the internet in real time, reads what's out there, and streams back a full analytical forecast: base case, upside, downside, the things that could make all of it wrong — and the single variable that determines which future actually arrives.
 
-The output isn't a summary. It's a framework for thinking about what comes next.
+The output isn't a summary. It's a framework for thinking about what comes next. Results include a **Projection Timeline** — a visual probability chart that maps each prediction to a point in time across the chosen horizon.
+
+A settings menu gives access to theme switching (dark / light), API key management, and help.
 
 ---
 
@@ -304,6 +306,39 @@ create table prediction_runs (
   created_at   timestamptz not null default now()
 );
 ```
+
+---
+
+## Projection Timeline
+
+Every completed forecast renders an interactive **Projection Timeline** — a visual probability chart placed directly below the streamed output.
+
+```
+┌─────────────────────────────────────────────────────┐
+│ ── PROJECTION TIMELINE          ━ TENDENCY  ╌ ARC   │
+│                                                     │
+│  75% ·····················                          │
+│  50% ────────────────────────────────────           │
+│  25% ·····················                          │
+│     ●         ●          ●          ◉               │
+│    0.25×H    0.5×H     0.75×H      H                │
+├──────────┬──────────┬──────────┬───────────────────┤
+│ 25% WK   │ 50% WK   │ 75% WK   │ FINAL ASSESSMENT  │
+│ MAY 2026 │ JUL 2026 │ SEP 2026 │ NOV 2026          │
+│          │          │          │                    │
+│ [pred 1] │ [pred 2] │ [pred 3] │ [bottom line]     │
+│ CONF 62% │ CONF 71% │ CONF 55% │ CONF 68%          │
+└──────────┴──────────┴──────────┴───────────────────┘
+```
+
+**How it works:**
+
+- **Auto-horizon** — parses the horizon string (e.g. `"3 months"`) to an exact day count; milestone labels (D / WK / MO / YR) and calendar dates auto-scale to the window
+- **Dual curves** — a dashed background arc tracks the base rate → final estimate trajectory; a solid tendency line connects the four individual prediction confidence points
+- **Projection cards** — four cards at 25 / 50 / 75 / 100% of the horizon, each showing the milestone label, calendar date, full prediction text, and a confidence bar
+- **Deep mode** — predictions sourced from the `## Predictions Table` markdown table
+- **Light mode** — predictions sourced from the `## Key Predictions` bullet list; final card uses Bottom Line text + average confidence
+- **Color coding** — green ≥ 70%, amber 45–69%, red < 45%
 
 ---
 
